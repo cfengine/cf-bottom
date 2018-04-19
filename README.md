@@ -1,2 +1,3 @@
-# self
-__init__
+# CFEngine Bot, Tom
+
+I'm your friendly neighbourhood bot, Tom.
