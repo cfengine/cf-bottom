@@ -62,7 +62,7 @@ class GitHub():
         self.get_cache = {}
 
     def path(self, path):
-        if path[0] == "/":
+        if path.startswith("/"):
             path = "https://api.github.com" + path
         return path
 
@@ -81,7 +81,7 @@ class GitHub():
         return data
 
     def put(self, path, data):
-        pass
+        raise NotImplementedError
 
     def post(self, path, data):
         with open("api.log", "a") as f:
@@ -195,8 +195,7 @@ class Tom():
             print("Fetching pull requests for {}".format(repo["full_name"]))
             pulls = self.github.get(repo["url"] + "/pulls")
             if pulls:
-                for pull in pulls:
-                    self.pulls.append(pull)
+                self.pulls.extend(pulls)
 
         if self.pulls:
             print("Found {} open pull requests".format(len(self.pulls)))
