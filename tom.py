@@ -6,25 +6,27 @@ import requests
 import random
 from copy import copy
 
+# Globals for convenience
+
+nick = "nickanderson"
+vratislav = "vpodzime"
+craig = "craigcomstock"
+ole = "olehermanse"
+aleksei = "Lex-2008"
+
+repos = {
+    "core": [ole, vratislav],
+    "enterprise": [ole, vratislav, craig],
+    "nova": [ole, vratislav, craig],
+    "masterfiles": [craig, nick],
+    "buildscripts": [craig, aleksei],
+    "documentation": [nick, craig],
+    "contrib": [nick],
+    "self": [ole, vratislav]
+}
 
 def get_reviewers(repo, exclude=None):
     assert exclude is None or type(exclude) is list
-    nick = "nickanderson"
-    vratislav = "vpodzime"
-    craig = "craigcomstock"
-    ole = "olehermanse"
-    aleksei = "Lex-2008"
-
-    repos = {
-        "core": [ole, vratislav],
-        "enterprise": [ole, vratislav, craig],
-        "nova": [ole, vratislav, craig],
-        "masterfiles": [craig, nick],
-        "buildscripts": [craig, aleksei],
-        "documentation": [nick, craig],
-        "contrib": [nick],
-        "self": [ole, vratislav]
-    }
 
     defaults = [ole, vratislav]
 
@@ -130,6 +132,8 @@ class PR():
         self.reviewers = get_reviewers(self.repo, exclude=[self.author])
         if self.author in self.reviewers:
             self.reviewers.remove(self.author)
+        if len(self.reviewers) > 1 and nick in self.reviewers:
+            self.reviewers.remove(nick)
         self.reviewer = random.choice(self.reviewers)
 
     def has_label(self, label_name):
