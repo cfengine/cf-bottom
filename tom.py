@@ -121,12 +121,20 @@ class PR():
         self.title = data["title"]
         self.number = data["number"]
 
+        self.labels = []
+        if "labels" in data:
+            self.labels = [label["name"].lower() for label in data["labels"]]
+
         self.comments = Comments(self.github.get(self.comments_url), github)
 
         self.reviewers = get_reviewers(self.repo, exclude=[self.author])
         if self.author in self.reviewers:
             self.reviewers.remove(self.author)
         self.reviewer = random.choice(self.reviewers)
+
+    def has_label(self, label_name):
+        label_name = label_name.lower()
+        return label_name in self.labels
 
 
 class Tom():
@@ -137,6 +145,7 @@ class Tom():
     def comment(self, pr, message):
         path = pr.comments_url
         if self.interactive:
+            print(pretty(pr.data))
             print("PR: {} ({}#{})".format(pr.title, pr.repo, pr.number))
             print("Comment: '{}'".format(message))
             choice = input("Accept? ")
@@ -146,18 +155,13 @@ class Tom():
         data = {"body": str(message)}
         self.github.post(path, data)
 
-    def handle_pr(self, pr):
-        print("Handling PR: {}".format(pr["url"]))
-        # print(pretty(pr))
-        pr = PR(pr, self.github)
-
-        # TODO: Add conditions here for posting different types of comments
-        # conditions can be update time, mentions of cf-bottom, etc.
-
+    def ping_reviewer(self, pr):
         if "cf-bottom" in pr.comments.users:
             print("I have already commented :)")
         elif len(pr.comments) > 0:
             print("There are already comments there, so I won't disturb")
+        elif pr.has_label("WIP") or "WIP" in pr.title.upper():
+            print("This is a WIP PR, so I won't disturb")
         else:
             # print(pretty(pr.data))
             thanks = random.choice(["Thanks", "Thank you"])
@@ -166,6 +170,15 @@ class Tom():
                 thanks=thanks, pr=pull, user=pr.reviewer)
             self.comment(pr, comment)
         print("")
+
+    def handle_pr(self, pr):
+        print("Handling PR: {}".format(pr["url"]))
+        # print(pretty(pr))
+        pr = PR(pr, self.github)
+
+        # TODO: Add conditions here for posting different types of comments
+        # conditions can be update time, mentions of cf-bottom, etc.
+        self.ping_reviewer(pr)
 
     def run(self):
         self.repos = self.github.get("/user/repos")
