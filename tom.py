@@ -84,6 +84,8 @@ class GitHub():
         pass
 
     def post(self, path, data):
+        with open("api.log", "a") as f:
+            f.write("POST {}\n{}".format(path, data))
         r = requests.post(path, headers=self.headers, json=data)
         # print(r.text)
         assert r.status_code >= 200 and r.status_code < 300
