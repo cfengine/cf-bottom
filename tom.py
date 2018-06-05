@@ -4,6 +4,7 @@ import json
 import argparse
 import requests
 import random
+import logging as log
 from copy import copy
 
 # Global constants for convenience
@@ -50,6 +51,7 @@ def get_args():
     argparser = argparse.ArgumentParser(description='CFEngine Bot, Tom')
     argparser.add_argument(
         '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
+    argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
     args = argparser.parse_args()
 
     return args
@@ -71,30 +73,36 @@ class GitHub():
         return path
 
     def get(self, path):
+        log.debug("GET {}".format(path))
         path = self.path(path)
         if path in self.get_cache:
+            log.debug("Found in cache")
             return self.get_cache[path]
         r = requests.get(path, headers=self.headers)
-        # print(r.text)
-        # print(r.status_code)
+        log.debug("RESPONSE {}".format(r.status_code))
 
         assert r.status_code >= 200 and r.status_code < 300
         data = r.json()
-        # print(pretty(data))
+        log.debug(pretty(data))
         self.get_cache[path] = data
         return data
 
     def put(self, path, data):
+        log.critical("PUT has not been implemented yet!")
         raise NotImplementedError
 
-    def post(self, path, data):
+    def api_log(self, msg):
+        log.debug("{}".format(msg))
         with open("api.log", "a") as f:
-            f.write("POST {}\n{}\n".format(path, data))
+            f.write(msg + "\n")
+
+    def post(self, path, data):
+        self.api_log("POST {} {}".format(path, data))
         r = requests.post(path, headers=self.headers, json=data)
-        # print(r.text)
+        log.debug("RESPONSE {}".format(r.status_code))
         assert r.status_code >= 200 and r.status_code < 300
         data = r.json()
-        # print(pretty(data))
+        log.debug(pretty(data))
         return data
 
     @staticmethod
@@ -166,34 +174,35 @@ class Tom():
     def post(self, path, data, msg=None):
         if self.interactive:
             print("I'd like to POST something")
-        else:
-            print("I will POST something")
-        if msg:
-            print(msg)
-        print("Path: {}".format(path))
-        print("Data: {}".format(data))
-        if self.interactive:
+            if msg:
+                print(msg)
+            print("Path: {}".format(path))
+            print("Data: {}".format(data))
             choice = input("Accept? ")
             choice = choice.strip().lower()
             if choice != "y" and choice != "yes":
-                return
+                return False
         self.github.post(path, data)
+        return True
 
     def comment(self, pr, message):
         path = pr.comments_url
-        msg = "PR: {} ({}#{})".format(pr.title, pr.repo, pr.number)
+        pr_string = "PR: {} ({}#{})".format(pr.title, pr.repo, pr.number)
         data = {"body": str(message)}
-        self.post(path, data, msg)
+        commented = self.post(path, data, pr_string)
+        if commented:
+            print("Commented on {}".format(pr_string))
+            print(message)
+            print("")
 
     def ping_reviewer(self, pr):
         if "cf-bottom" in pr.comments.users:
-            print("I have already commented :)")
+            log.info("I have already commented :)")
         elif len(pr.comments) > 0:
-            print("There are already comments there, so I won't disturb")
+            log.info("There are already comments there, so I won't disturb")
         elif pr.has_label("WIP") or "WIP" in pr.title.upper():
-            print("This is a WIP PR, so I won't disturb")
+            log.info("This is a WIP PR, so I won't disturb")
         else:
-            # print(pretty(pr.data))
             thanks = random.choice(["Thanks", "Thank you"])
             pull = random.choice(["PR", "pull request"])
             comment = "{thanks} for submitting a {pr}! Maybe @{user} can review this?".format(
@@ -207,8 +216,8 @@ class Tom():
             return
         for person in pr.approvals:
             if person in pr.maintainers:
-                print("Reviewing: {}".format(pr.title))
-                print("Approved by: " + str(pr.approvals))
+                log.info("Reviewing: {}".format(pr.title))
+                log.info("Approved by: " + str(pr.approvals))
                 body = "I trust @{}, approved!".format(person)
                 event = "APPROVE"
                 data = {"body": body, "event": event}
@@ -216,12 +225,11 @@ class Tom():
 
     def handle_pr(self, pr):
         url = pr["url"].replace("https://api.github.com/repos/", "")
-        print("Looking at: {} ({})".format(pr["title"], url))
+        log.info("Looking at: {} ({})".format(pr["title"], url))
         pr = PR(pr, self.github)
 
         self.ping_reviewer(pr)
         self.review(pr)
-        print("")
 
     def run(self):
         self.repos = self.github.get("/user/repos")
@@ -229,17 +237,16 @@ class Tom():
 
         self.pulls = []
         for repo in self.repos:
-            print("Fetching pull requests for {}".format(repo["full_name"]))
+            log.info("Fetching pull requests for {}".format(repo["full_name"]))
             pulls = self.github.get(repo["url"] + "/pulls")
             if pulls:
                 self.pulls.extend(pulls)
 
         if self.pulls:
-            print("Found {} open pull requests".format(len(self.pulls)))
+            log.info("Found {} open pull requests".format(len(self.pulls)))
         else:
-            print("Couldn't find any open pull requests!")
+            log.warning("Couldn't find any open pull requests!")
 
-        print("")
         for pull in self.pulls:
             self.handle_pr(pull)
 
@@ -264,6 +271,15 @@ def get_token():
 
 def main():
     args = get_args()
+    fmt = "[%(levelname)s] %(message)s"
+    if args.log_level:
+        numeric_level = getattr(log, args.log_level.upper(), None)
+        if not isinstance(numeric_level, int):
+            raise ValueError("Invalid log level: {}".format(args.log_level))
+        log.basicConfig(level=numeric_level, format=fmt)
+    else:
+        log.basicConfig(format=fmt)
+
     token = get_token()
     if not token:
         sys.exit("Could not get GITHUB_TOKEN from file or env")
