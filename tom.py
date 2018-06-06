@@ -228,6 +228,8 @@ class PR():
         self.reviewers = get_maintainers(self.repo, exclude=[self.author])
         if self.author in self.reviewers:
             self.reviewers.remove(self.author)
+        if tom in self.reviewers:
+            self.reviewers.remove(tom)
         if len(self.reviewers) > 1 and nick in self.reviewers:
             self.reviewers.remove(nick)
         self.reviewer = random.choice(self.reviewers)
