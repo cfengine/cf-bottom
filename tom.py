@@ -6,6 +6,8 @@ import requests
 import random
 import logging as log
 from copy import copy
+from time import sleep
+from requests.auth import HTTPBasicAuth
 
 # Global constants for convenience
 
@@ -15,6 +17,8 @@ craig = "craigcomstock"
 ole = "olehermanse"
 aleksei = "Lex-2008"
 tom = "cf-bottom"
+
+trusted = [nick, vratislav, craig, ole, aleksei]
 
 repos = {
     "cfengine/core": [ole, vratislav],
@@ -26,6 +30,13 @@ repos = {
     "cfengine/contrib": [nick],
     "cf-bottom/self": [ole, vratislav, tom]
 }
+
+
+def confirmation(msg):
+    print(msg)
+    choice = input("Accept? ")
+    choice = choice.strip().lower()
+    return choice == "y" or choice == "yes"
 
 
 def get_maintainers(repo, exclude=None):
@@ -47,18 +58,65 @@ def get_maintainers(repo, exclude=None):
     return reviewers
 
 
-def get_args():
-    argparser = argparse.ArgumentParser(description='CFEngine Bot, Tom')
-    argparser.add_argument(
-        '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
-    argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
-    args = argparser.parse_args()
-
-    return args
-
-
 def pretty(data):
     return json.dumps(data, indent=2)
+
+
+class Jenkins():
+    def __init__(self, user, token, crumb):
+        self.user = user
+        self.token = token
+        self.crumb = crumb
+
+        self.auth = HTTPBasicAuth(user, token)
+        self.headers = {"Jenkins-Crumb": crumb}
+
+        self.url = "https://ci.cfengine.com/"
+        self.job_name = "pr-pipeline"
+        self.job_url = "{}job/{}/".format(self.url, self.job_name)
+        self.trigger_url = "{}buildWithParameters/api/json".format(self.job_url)
+
+    def post(self, path, data):
+        r = requests.post(path, data=data, headers=self.headers, auth=self.auth)
+        assert r.status_code >= 200 and r.status_code < 300
+        print(r.headers)
+        try:
+            return r.headers, r.json()
+        except:
+            return r.headers, r.text
+
+    def trigger(self, prs=None, branch=None, title=None):
+        path = self.trigger_url
+        params = {}
+        if prs:
+            for repo in prs:
+                param_name = repo.upper().replace("-", "_")
+                assert " " not in param_name
+                param_name = param_name + "_REV"
+                params[param_name] = str(prs[repo])
+        if branch is not None:
+            params["BASE_BRANCH"] = str(branch)
+        if title is not None:
+            description = "{} ({})".format(title, "cf-bottom")
+        else:
+            description = "Unnamed build (cf-bottom)"
+        params["BUILD_DESC"] = description
+        return self.post(path, params)
+
+    def wait_for_queue(self, url):
+        log.debug("Queue URL: {}".format(url))
+        queue_item = {}
+        while "executable" not in queue_item:
+            log.info("Waiting for jenkins build in queue")
+            sleep(1)
+            r = requests.get(url + "api/json")
+            assert r.status_code >= 200 and r.status_code < 300
+            queue_item = r.json()
+        log.debug(pretty(queue_item))
+
+        num = queue_item["executable"]["number"]
+        url = queue_item["executable"]["url"]
+        return num, url
 
 
 class GitHub():
@@ -114,10 +172,25 @@ class GitHub():
         return "/repos/{}/{}/issues/{}/comments".format(owner, repo, issue)
 
 
+class Comment():
+    def __init__(self, data):
+        self.data = data
+        self.author = data["user"]["login"]
+        self.body = data["body"]
+
+    def __str__(self):
+        return "{}: {}".format(self.author, self.body)
+
+    def __contains__(self, value):
+        return value == self.author or value in self.body
+
+
 class Comments():
     def __init__(self, data, github):
         self.data = data
         self.github = github
+
+        self.comments = [Comment(c) for c in data]
 
         comments = data
         self.users = [comment["user"]["login"] for comment in comments]
@@ -125,6 +198,9 @@ class Comments():
 
     def __len__(self):
         return len(self.data)
+
+    def __getitem__(self, index):
+        return self.comments[index]
 
 
 class PR():
@@ -135,6 +211,7 @@ class PR():
         self.comments_url = data["comments_url"]  # POST comments to this URL
         self.author = data["user"]["login"]  # PR Author / Submitter
         self.repo = data["base"]["repo"]["full_name"]  # cfengine/core
+        self.short_repo_name = data["base"]["repo"]["name"]
 
         self.title = data["title"]
         self.number = data["number"]
@@ -151,6 +228,8 @@ class PR():
         self.reviewers = get_maintainers(self.repo, exclude=[self.author])
         if self.author in self.reviewers:
             self.reviewers.remove(self.author)
+        if tom in self.reviewers:
+            self.reviewers.remove(tom)
         if len(self.reviewers) > 1 and nick in self.reviewers:
             self.reviewers.remove(nick)
         self.reviewer = random.choice(self.reviewers)
@@ -167,20 +246,23 @@ class PR():
 
 
 class Tom():
-    def __init__(self, token, interactive):
-        self.github = GitHub(token)
+    def __init__(self, secrets, interactive):
+        github = secrets["GITHUB_TOKEN"]
+        self.github = GitHub(github)
+
+        user = secrets["JENKINS_USER"]
+        token = secrets["JENKINS_TOKEN"]
+        crumb = secrets["JENKINS_CRUMB"]
+        self.jenkins = Jenkins(user, token, crumb)
         self.interactive = interactive
 
     def post(self, path, data, msg=None):
         if self.interactive:
             print("I'd like to POST something")
-            if msg:
-                print(msg)
-            print("Path: {}".format(path))
-            print("Data: {}".format(data))
-            choice = input("Accept? ")
-            choice = choice.strip().lower()
-            if choice != "y" and choice != "yes":
+            msg = "" if msg is None else msg
+            msg += "Path: {}".format(path)
+            msg += "Data: {}".format(data)
+            if not confirmation(msg):
                 return False
         self.github.post(path, data)
         return True
@@ -222,6 +304,51 @@ class Tom():
                 event = "APPROVE"
                 data = {"body": body, "event": event}
                 self.post(pr.reviews_url, data)
+                print("Approved PR: {}".format(pr.title))
+
+    def comment_badge(self, pr, num, url):
+        badge_icon = "https://ci.cfengine.com/buildStatus/icon?job=pr-pipeline&build={}".format(num)
+        badge_link = "https://ci.cfengine.com/job/pr-pipeline/{}/".format(num)
+        badge = "[![Build Status]({})]({})".format(badge_icon, badge_link)
+        response = random.choice(["Alright", "Sure"])
+        new_comment = "{}, I triggered a build:\n\n{}\n\n{}".format(response, badge, url)
+        self.comment(pr, new_comment)
+
+    def trigger_build(self, pr, comment):
+        prs = {}
+        prs[pr.short_repo_name] = pr.number
+        #TODO: allow pr numbers in comments
+
+        msg = []
+        msg.append(str(comment))
+        msg.append("Triger build for: {}".format(pr.title))
+        msg.append("PRs: {}".format(prs))
+        msg = "\n".join(msg)
+        if not confirmation(msg):
+            return
+
+        headers, body = self.jenkins.trigger(prs, title=pr.title)
+
+        queue_url = headers["Location"]
+
+        num, url = self.jenkins.wait_for_queue(queue_url)
+
+        print("Triggered build ({}): {}".format(num, url))
+        self.comment_badge(pr, num, url)
+
+    def handle_comments(self, pr):
+        for comment in reversed(pr.comments):
+            if comment.author == "cf-bottom":
+                return
+            if comment.author not in trusted:
+                continue
+            if "@cf-bottom" in comment:
+                body = comment.body.lower()
+                trigger_words = ["jenkins", "pipeline", "build"]
+                for word in trigger_words:
+                    if word.lower() in body:
+                        self.trigger_build(pr, comment)
+                        return
 
     def handle_pr(self, pr):
         url = pr["url"].replace("https://api.github.com/repos/", "")
@@ -230,6 +357,7 @@ class Tom():
 
         self.ping_reviewer(pr)
         self.review(pr)
+        self.handle_comments(pr)
 
     def run(self):
         self.repos = self.github.get("/user/repos")
@@ -251,22 +379,39 @@ class Tom():
             self.handle_pr(pull)
 
 
-def run_tom(token, interactive):
-    tom = Tom(token, interactive)
+def run_tom(interactive):
+    secrets = {}
+    names = ["GITHUB_TOKEN", "JENKINS_CRUMB", "JENKINS_USER", "JENKINS_TOKEN"]
+    for n in names:
+        secrets[n] = get_var(n)
+    tom = Tom(secrets, interactive)
     tom.run()
 
 
-def get_token():
-    token = None
-    if "GITHUB_TOKEN" in os.environ:
-        token = os.environ["GITHUB_TOKEN"]
+def get_var(name):
+    var = None
+    if name in os.environ:
+        var = os.environ[name]
     else:
         try:
-            with open("GITHUB_TOKEN", "r") as f:
-                token = f.read().strip()
+            with open(name, "r") as f:
+                var = f.read().strip()
         except (PermissionError, FileNotFoundError):
             pass
-    return token
+
+    if not var:
+        sys.exit("Could not get {} from file or env".format(var))
+    return var
+
+
+def get_args():
+    argparser = argparse.ArgumentParser(description='CFEngine Bot, Tom')
+    argparser.add_argument(
+        '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
+    argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
+    args = argparser.parse_args()
+
+    return args
 
 
 def main():
@@ -280,10 +425,7 @@ def main():
     else:
         log.basicConfig(format=fmt)
 
-    token = get_token()
-    if not token:
-        sys.exit("Could not get GITHUB_TOKEN from file or env")
-    run_tom(token, args.interactive)
+    run_tom(args.interactive)
 
 
 if __name__ == "__main__":
