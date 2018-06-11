@@ -319,13 +319,14 @@ class Tom():
         prs[pr.short_repo_name] = pr.number
         #TODO: allow pr numbers in comments
 
-        msg = []
-        msg.append(str(comment))
-        msg.append("Triger build for: {}".format(pr.title))
-        msg.append("PRs: {}".format(prs))
-        msg = "\n".join(msg)
-        if not confirmation(msg):
-            return
+        if self.interactive:
+            msg = []
+            msg.append(str(comment))
+            msg.append("Triger build for: {}".format(pr.title))
+            msg.append("PRs: {}".format(prs))
+            msg = "\n".join(msg)
+            if not confirmation(msg):
+                return
 
         headers, body = self.jenkins.trigger(prs, title=pr.title)
 
