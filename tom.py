@@ -410,6 +410,8 @@ def get_args():
     argparser = argparse.ArgumentParser(description='CFEngine Bot, Tom')
     argparser.add_argument(
         '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
+    argparser.add_argument(
+        '--continuous', '-c', help='Run in a loop, exits on error/failures', action="store_true")
     argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
     args = argparser.parse_args()
 
@@ -426,8 +428,13 @@ def main():
         log.basicConfig(level=numeric_level, format=fmt)
     else:
         log.basicConfig(format=fmt)
-
-    run_tom(args.interactive)
+    if args.continuous:
+        while True:
+            run_tom(args.interactive)
+            print("Iteration complete, sleeping for 12 seconds")
+            sleep(12)
+    else:
+        run_tom(args.interactive)
 
 
 if __name__ == "__main__":
