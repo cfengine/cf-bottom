@@ -1,3 +1,17 @@
+# secrets
+GITHUB_TOKEN
+JENKINS_CRUMB
+JENKINS_TOKEN
+JENKINS_USER
+
+# tmp data
+tmp*
+
+# logs
+*.log
+
+# GITHUB DEFAULT PYTHON GITIGNORE:
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -99,9 +113,3 @@ ENV/
 
 # mypy
 .mypy_cache/
-
-GITHUB_TOKEN
-JENKINS_CRUMB
-JENKINS_TOKEN
-JENKINS_USER
-tmp_pr.json
