@@ -244,6 +244,14 @@ class PR():
             if r["state"] == "APPROVED":
                 self.approvals.append(r["user"]["login"])
 
+        # This overwrites for every PR, intentionally, it is just used for
+        # easier prototyping/development
+        self.dump_to_file()
+
+    def dump_to_file(self, path="tmp_pr.json"):
+        with open(path, "w") as f:
+            f.write(pretty(self.data))
+
     def has_label(self, label_name):
         label_name = label_name.lower()
         return label_name in self.labels
