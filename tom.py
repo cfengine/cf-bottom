@@ -17,8 +17,9 @@ craig = "craigcomstock"
 ole = "olehermanse"
 aleksei = "Lex-2008"
 tom = "cf-bottom"
+karl = "karlhto"
 
-trusted = [nick, vratislav, craig, ole, aleksei]
+trusted = [nick, vratislav, craig, ole, aleksei, karl]
 
 repos = {
     "cfengine/core": [ole, vratislav],
@@ -28,7 +29,7 @@ repos = {
     "cfengine/buildscripts": [craig, aleksei],
     "cfengine/documentation": [nick, craig],
     "cfengine/contrib": [nick],
-    "cf-bottom/self": [ole, vratislav, tom]
+    "cf-bottom/self": [ole, vratislav, tom, karl]
 }
 
 
