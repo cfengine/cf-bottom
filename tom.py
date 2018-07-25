@@ -86,19 +86,19 @@ class Jenkins():
         except:
             return r.headers, r.text
 
-    def trigger(self, prs=None, branch=None, title=None):
+    def trigger(self, prs=None, branch="master", title=None):
         path = self.trigger_url
         params = {}
+        repo_names = ",".join([k.lower() for k in prs])
         if prs:
             for repo in prs:
                 param_name = repo.upper().replace("-", "_")
                 assert " " not in param_name
                 param_name = param_name + "_REV"
                 params[param_name] = str(prs[repo])
-        if branch is not None:
-            params["BASE_BRANCH"] = str(branch)
+        params["BASE_BRANCH"] = str(branch)
         if title is not None:
-            description = "{} ({})".format(title, "cf-bottom")
+            description = "{} ({} {}@{})".format(title, "cf-bottom", repo_names, branch)
         else:
             description = "Unnamed build (cf-bottom)"
         params["BUILD_DESC"] = description
@@ -214,6 +214,9 @@ class PR():
         self.repo = data["base"]["repo"]["full_name"]  # cfengine/core
         self.short_repo_name = data["base"]["repo"]["name"]
 
+        self.base_branch = data["base"]["ref"]
+        self.base_user = data["base"]["user"]["login"]
+
         self.title = data["title"]
         self.number = data["number"]
         self.api_url = data["url"]
@@ -240,6 +243,14 @@ class PR():
         for r in self.reviews:
             if r["state"] == "APPROVED":
                 self.approvals.append(r["user"]["login"])
+
+        # This overwrites for every PR, intentionally, it is just used for
+        # easier prototyping/development
+        self.dump_to_file()
+
+    def dump_to_file(self, path="tmp_pr.json"):
+        with open(path, "w") as f:
+            f.write(pretty(self.data))
 
     def has_label(self, label_name):
         label_name = label_name.lower()
@@ -329,7 +340,7 @@ class Tom():
             if not confirmation(msg):
                 return
 
-        headers, body = self.jenkins.trigger(prs, title=pr.title)
+        headers, body = self.jenkins.trigger(prs, branch=pr.base_branch, title=pr.title)
 
         queue_url = headers["Location"]
 
@@ -338,19 +349,28 @@ class Tom():
         print("Triggered build ({}): {}".format(num, url))
         self.comment_badge(pr, num, url)
 
+    def handle_mention(self, pr, comment):
+        deny = "@{} : I'm sorry, I cannot do that. @olehermanse please help.".format(comment.author)
+        if comment.author not in trusted or pr.base_user != "cfengine":
+            print("Denying mention from {} on base {}".format(comment.author, pr.base_user))
+            self.comment(pr, deny)
+            return
+        body = comment.body.lower()
+        trigger_words = ["jenkins", "pipeline", "build", "trigger"]
+        for word in trigger_words:
+            if word.lower() in body:
+                self.trigger_build(pr, comment)
+                return
+
+        no_comprendo = "I'm not sure I understand, @{}.".format(comment.author)
+        self.comment(pr, no_comprendo)
+
     def handle_comments(self, pr):
         for comment in reversed(pr.comments):
             if comment.author == "cf-bottom":
                 return
-            if comment.author not in trusted:
-                continue
             if "@cf-bottom" in comment:
-                body = comment.body.lower()
-                trigger_words = ["jenkins", "pipeline", "build"]
-                for word in trigger_words:
-                    if word.lower() in body:
-                        self.trigger_build(pr, comment)
-                        return
+                self.handle_mention(pr, comment)
 
     def handle_pr(self, pr):
         url = pr["url"].replace("https://api.github.com/repos/", "")
@@ -410,6 +430,8 @@ def get_args():
     argparser = argparse.ArgumentParser(description='CFEngine Bot, Tom')
     argparser.add_argument(
         '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
+    argparser.add_argument(
+        '--continuous', '-c', help='Run in a loop, exits on error/failures', action="store_true")
     argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
     args = argparser.parse_args()
 
@@ -426,8 +448,13 @@ def main():
         log.basicConfig(level=numeric_level, format=fmt)
     else:
         log.basicConfig(format=fmt)
-
-    run_tom(args.interactive)
+    if args.continuous:
+        while True:
+            run_tom(args.interactive)
+            print("Iteration complete, sleeping for 12 seconds")
+            sleep(12)
+    else:
+        run_tom(args.interactive)
 
 
 if __name__ == "__main__":
