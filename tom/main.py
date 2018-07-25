@@ -385,6 +385,10 @@ class Tom():
         self.repos = self.github.get("/user/repos")
         self.repos += self.github.get("/orgs/cfengine/repos")
 
+        # Remove duplicate repos:
+        repos_map = {repo["full_name"]: repo for repo in self.repos}
+        self.repos = [value for key, value in repos_map.items()]
+
         self.pulls = []
         for repo in self.repos:
             log.info("Fetching pull requests for {}".format(repo["full_name"]))
