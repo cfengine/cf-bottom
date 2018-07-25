@@ -1,0 +1,69 @@
+body file control
+{
+    inputs => { "$(sys.libdir)/stdlib.cf", "$(sys.libdir)/vcs.cf" };
+}
+
+body contain in_tom
+{
+    useshell => "useshell";
+    # exec_owner => "tom";
+    chdir => "$(tom_update.tom_dir)";
+}
+
+bundle agent tom_init
+{
+    users:
+        "tom"
+            policy => "present",
+            description => "Tom",
+            home_dir => "/home/tom/",
+            group_primary => "users",
+            # groups_secondary => { "printers", "webadmin" },
+            shell => "/bin/bash";
+}
+
+bundle agent tom_update
+{
+    vars:
+        "tom_dir" string => "/home/tom/self";
+        "remote_args" slist => {"add", "origin", "https://github.com/cf-bottom/self.git"};
+    classes:
+        "tom_exists" expression => isdir("$(tom_dir)");
+    methods:
+        !tom_exists::
+            "Init"
+                usebundle => git_init("$(tom_dir)");
+            "Remote"
+                usebundle => git("$(tom_dir)", "remote", @(remote_args));
+    commands:
+        tom_exists::
+            "git pull origin master"
+                contain => in_tom;
+}
+
+bundle agent tom_install
+{
+    commands:
+        "pip3 install -r requirements.txt"
+            contain => in_tom;
+}
+
+bundle agent tom_run
+{
+    commands:
+        "python3 -m tom"
+            contain => in_tom;
+}
+
+bundle agent __main__
+{
+    methods:
+        "Init"
+            usebundle => "tom_init";
+        "Update"
+            usebundle => "tom_update";
+        "Install"
+            usebundle => "tom_install";
+        "Run"
+            usebundle => "tom_run";
+}
