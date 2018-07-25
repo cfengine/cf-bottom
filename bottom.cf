@@ -3,13 +3,6 @@ body file control
     inputs => { "$(sys.libdir)/stdlib.cf", "$(sys.libdir)/vcs.cf" };
 }
 
-body contain in_home
-{
-    useshell => "useshell";
-    # exec_owner => "tom";
-    chdir => "/home/tom";
-}
-
 body contain in_tom
 {
     useshell => "useshell";
@@ -77,8 +70,8 @@ bundle agent tom_install
 bundle agent tom_run
 {
     commands:
-        "python3 -m self/tom --secrets /hom/tom/"
-            contain => in_home;
+        "python3 -m tom --secrets /home/tom/ --log-level info"
+            contain => in_tom;
 }
 
 bundle agent __main__
