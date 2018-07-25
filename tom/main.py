@@ -401,22 +401,22 @@ class Tom():
             self.handle_pr(pull)
 
 
-def run_tom(interactive):
+def run_tom(interactive, secrets_dir):
     secrets = {}
     names = ["GITHUB_TOKEN", "JENKINS_CRUMB", "JENKINS_USER", "JENKINS_TOKEN"]
     for n in names:
-        secrets[n] = get_var(n)
+        secrets[n] = get_var(n, secrets_dir)
     tom = Tom(secrets, interactive)
     tom.run()
 
 
-def get_var(name):
+def get_var(name, dir="./"):
     var = None
     if name in os.environ:
         var = os.environ[name]
     else:
         try:
-            with open(name, "r") as f:
+            with open(os.path.join(dir, name), "r") as f:
                 var = f.read().strip()
         except (PermissionError, FileNotFoundError):
             pass
@@ -432,6 +432,8 @@ def get_args():
         '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
     argparser.add_argument(
         '--continuous', '-c', help='Run in a loop, exits on error/failures', action="store_true")
+    argparser.add_argument(
+        '--secrets', '-s', help='Directory to read secrets', default="./", type=str)
     argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
     args = argparser.parse_args()
 
@@ -454,7 +456,7 @@ def main():
             print("Iteration complete, sleeping for 12 seconds")
             sleep(12)
     else:
-        run_tom(args.interactive)
+        run_tom(args.interactive, args.secrets)
 
 
 if __name__ == "__main__":

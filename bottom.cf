@@ -3,6 +3,13 @@ body file control
     inputs => { "$(sys.libdir)/stdlib.cf", "$(sys.libdir)/vcs.cf" };
 }
 
+body contain in_home
+{
+    useshell => "useshell";
+    # exec_owner => "tom";
+    chdir => "/home/tom";
+}
+
 body contain in_tom
 {
     useshell => "useshell";
@@ -12,6 +19,12 @@ body contain in_tom
 
 bundle agent tom_init
 {
+    files:
+        "/home/tom/."
+            create => "true",
+            perms => mog("700", "tom", "users");
+        "/home/tom/self/."
+            perms => mog("700", "tom", "users");
     users:
         "tom"
             policy => "present",
@@ -22,19 +35,32 @@ bundle agent tom_init
             shell => "/bin/bash";
 }
 
+bundle agent tom_repo_init
+{
+    vars:
+        "tom_dir" string => "/home/tom/self";
+        "remote_args" slist => {"add origin https://github.com/cf-bottom/self.git"};
+    files:
+        "/home/tom/self/."
+            create => "true",
+            perms => mog("700", "tom", "users");
+    methods:
+        "Init"
+            usebundle => git_init("$(tom_dir)");
+        "Remote"
+            usebundle => git("$(tom_dir)", "remote", @(remote_args));
+}
+
 bundle agent tom_update
 {
     vars:
         "tom_dir" string => "/home/tom/self";
-        "remote_args" slist => {"add", "origin", "https://github.com/cf-bottom/self.git"};
     classes:
         "tom_exists" expression => isdir("$(tom_dir)");
     methods:
         !tom_exists::
             "Init"
-                usebundle => git_init("$(tom_dir)");
-            "Remote"
-                usebundle => git("$(tom_dir)", "remote", @(remote_args));
+                usebundle => tom_repo_init;
     commands:
         tom_exists::
             "git pull origin master"
@@ -51,8 +77,8 @@ bundle agent tom_install
 bundle agent tom_run
 {
     commands:
-        "python3 -m tom"
-            contain => in_tom;
+        "python3 -m self/tom --secrets /hom/tom/"
+            contain => in_home;
 }
 
 bundle agent __main__
