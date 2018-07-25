@@ -399,6 +399,7 @@ class Tom():
 
         for pull in self.pulls:
             self.handle_pr(pull)
+        log.info("Tom successful")
 
 
 def run_tom(interactive, secrets_dir):
