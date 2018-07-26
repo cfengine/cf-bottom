@@ -4,6 +4,7 @@ import json
 import argparse
 import requests
 import random
+import re
 import logging as log
 from copy import copy
 from time import sleep
@@ -144,7 +145,16 @@ class GitHub():
         data = r.json()
         log.debug(pretty(data))
         self.get_cache[path] = data
-        return data
+        if (not isinstance(data, list) or
+                'link' not in r.headers or
+                'rel="next"' not in r.headers['link']):
+            # no need to paginate
+            return data
+        all_links = r.headers['link'].split(',')
+        next_link = [link for link in all_links if 'rel="next"' in link]
+        next_link = re.search('<(.*)>', next_link[0]).group(1)
+        log.debug('paginating from {} to {}'.format(path, next_link))
+        return data + self.get(next_link)
 
     def put(self, path, data):
         log.critical("PUT has not been implemented yet!")
