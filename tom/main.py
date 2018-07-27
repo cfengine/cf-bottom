@@ -165,14 +165,54 @@ class GitHub():
         with open("api.log", "a") as f:
             f.write(msg + "\n")
 
-    def post(self, path, data):
+    def post(self, path, data, check_status_code=True):
         self.api_log("POST {} {}".format(path, data))
+        path = self.path(path)
         r = requests.post(path, headers=self.headers, json=data)
         log.debug("RESPONSE {}".format(r.status_code))
-        assert r.status_code >= 200 and r.status_code < 300
+        if check_status_code:
+            assert r.status_code >= 200 and r.status_code < 300, r.text
         data = r.json()
         log.debug(pretty(data))
         return data
+
+    def create_pr(self, target_repo, target_branch,
+            source_user, source_branch, title, text, simple_output=True):
+        """Sends request to GitHub to create a pull request.
+        Args:
+            target_repo - repository where to create PR, for example 'cfengine/core'
+            target_branch - branch to which to create PR, for example '3.12.x'
+            source_user - user who forked target_repo - changes from his fork
+                will be in PR. For example 'Lex-2008'. Note that we do NOT
+                specify name of repo - github finds it automatically - looks
+                like any given user can fork any repo only once.
+            source_branch - branch in source_user's fork of target_repo from
+                which to take changes
+            title - title to assign to the PR (can be changed later by user)
+            text - longer description of PR (can be changed later by user)
+            simple_output - format of return value, see below
+        Returns:
+            Depending on simple_output, either:
+            * String 'PR: <url>' if simple_output=True, or
+            * nested dict based on JSON object representing the PR, shown at
+              https://developer.github.com/v3/pulls/#response-2
+        """
+
+        data = {
+                "title": title,
+                "head": source_user+':'+source_branch,
+                "base": target_branch,
+                "body": text,
+                "maintainer_can_modify": True
+                }
+        pr = self.post("/repos/{}/pulls".format(target_repo), data, False)
+        if not simple_output:
+            return pr
+        if not 'html_url' in pr:
+            return 'PR creation failed with error:\n```\n{}\n```\n'\
+                    .format(pretty(pr))
+        else:
+            return 'PR: {}'.format(pr['html_url'])
 
     @staticmethod
     def repo_path(owner, repo):
