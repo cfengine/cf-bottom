@@ -383,6 +383,55 @@ class GitRepo():
             self.run_command('push')
 
 
+class Slack():
+    """Class responsible for all iteractions with Slack, EXCEPT for receiving
+    messages (They are received as HTTPS requests from Slack to a webserver,
+    which currently feeds them to stdin of this script running with `--talk`
+    argument)
+    """
+
+    def __init__(self, bot_token, app_token):
+        self.bot_token = bot_token
+        self.app_token = app_token
+        self.my_username = 'cf-bottom'
+
+    def api(self, name):
+        return 'https://slack.com/api/' + name
+
+    def post(self, url, data={}):
+        if not url.startswith('http'):
+            url = self.api(url)
+        if not 'token' in data:
+            data['token'] = self.bot_token
+        r = requests.post(url, data)
+        assert r.status_code >= 200 and r.status_code < 300
+        try:
+            log.debug(pretty(r.json()))
+            return r.json()
+        except:
+            log.debug(pretty(r.text))
+            return False
+
+    def send_message(self, channel, text):
+        """Sends a message to a channel"""
+        if not channel:
+            return
+        self.post('chat.postMessage', data={"channel": channel, "text": text})
+
+    def set_reply_to(self, message):
+        """Saves parameters of original message (channel and username) for
+        easy _reply_ function
+        """
+        self.reply_to_channel = message['channel']
+        self.reply_to_user = message['user']
+
+    def reply(self, text, mention=False):
+        """Replies to saved channel, optionally mentioning saved user"""
+        if mention:
+            text = '<@{}>: {}'.format(self.reply_to_user, text)
+        self.send_message(self.reply_to_channel, text)
+
+
 class Tom():
     def __init__(self, secrets, interactive):
         github = secrets["GITHUB_TOKEN"]
@@ -392,6 +441,12 @@ class Tom():
         token = secrets["JENKINS_TOKEN"]
         crumb = secrets["JENKINS_CRUMB"]
         self.jenkins = Jenkins(user, token, crumb)
+
+        self.slack_read_token = secrets["SLACK_READ_TOKEN"]
+        bot_token = secrets["SLACK_SEND_TOKEN"]
+        app_token = secrets["SLACK_APP_TOKEN"]
+        self.slack = Slack(bot_token, app_token)
+
         self.interactive = interactive
 
     def post(self, path, data, msg=None):
@@ -534,7 +589,7 @@ class Tom():
 
 def run_tom(interactive, secrets_dir):
     secrets = {}
-    names = ["GITHUB_TOKEN", "JENKINS_CRUMB", "JENKINS_USER", "JENKINS_TOKEN"]
+    names = ["GITHUB_TOKEN", "JENKINS_CRUMB", "JENKINS_USER", "JENKINS_TOKEN", "SLACK_READ_TOKEN", "SLACK_SEND_TOKEN", "SLACK_APP_TOKEN"]
     for n in names:
         secrets[n] = get_var(n, secrets_dir)
     tom = Tom(secrets, interactive)
