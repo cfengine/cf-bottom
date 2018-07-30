@@ -948,13 +948,17 @@ class Tom():
 
         user = secrets["JENKINS_USER"]
         token = secrets["JENKINS_TOKEN"]
+        if not (user and token):
+            sys.exit("Cannot start Tom without Jenkins credentials")
         crumb = secrets["JENKINS_CRUMB"]
         self.jenkins = Jenkins(user, token, crumb)
 
         self.slack_read_token = secrets["SLACK_READ_TOKEN"]
         bot_token = secrets["SLACK_SEND_TOKEN"]
         app_token = secrets["SLACK_APP_TOKEN"]
-        self.slack = Slack(bot_token, app_token)
+        self.slack = None
+        if self.slack_read_token and bot_token and app_token:
+            self.slack = Slack(bot_token, app_token)
 
         self.dispatcher = CommandDispatcher(self.slack)
         self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
@@ -1098,7 +1102,12 @@ class Tom():
             self.handle_pr(pull)
         log.info("Tom successful")
 
-    def talk(self, message):
+    def talk(self):
+        if not self.slack:
+            sys.exit("Cannot start talk mode, Slack credentials missing")
+
+        message = json.load(sys.stdin)
+
         log.debug(pretty(message))
         if 'token' not in message or message['token'] != self.slack_read_token:
             log.warning('unauthorised message, ignoring')
@@ -1125,8 +1134,7 @@ def run_tom(interactive, secrets_dir, talk_mode):
         secrets[n] = get_var(n, secrets_dir)
     tom = Tom(secrets, interactive)
     if talk_mode:
-        message = json.load(sys.stdin)
-        tom.talk(message)
+        tom.talk()
     else:
         tom.run()
 
@@ -1141,9 +1149,6 @@ def get_var(name, dir="./"):
                 var = f.read().strip()
         except (PermissionError, FileNotFoundError):
             pass
-
-    if not var:
-        sys.exit("Could not get {} from file or env".format(var))
     return var
 
 
