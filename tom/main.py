@@ -15,21 +15,16 @@ nick = "nickanderson"
 vratislav = "vpodzime"
 craig = "craigcomstock"
 ole = "olehermanse"
+Ole = "oleorhagen"
+Kacf = "Kristian"
 aleksei = "Lex-2008"
-tom = "cf-bottom"
+tom = "mender-bottom"
 karl = "karlhto"
 
-trusted = [nick, vratislav, craig, ole, aleksei, karl]
+trusted = [nick, vratislav, craig, ole, aleksei, karl, Ole, Kacf]
 
 repos = {
-    "cfengine/core": [ole, vratislav],
-    "cfengine/enterprise": [ole, vratislav, craig],
-    "cfengine/nova": [ole, vratislav, craig],
-    "cfengine/masterfiles": [craig, nick],
-    "cfengine/buildscripts": [craig, aleksei],
-    "cfengine/documentation": [nick, craig],
-    "cfengine/contrib": [nick],
-    "cf-bottom/self": [ole, vratislav, tom, karl]
+    "mendersoftware/mender": [Ole, Kacf],
 }
 
 
@@ -45,7 +40,7 @@ def get_maintainers(repo, exclude=None):
         exclude = []
     assert type(exclude) is list
 
-    defaults = [ole, vratislav]
+    defaults = [Ole]
 
     reviewers = []
 
@@ -70,10 +65,12 @@ class Jenkins():
         self.crumb = crumb
 
         self.auth = HTTPBasicAuth(user, token)
-        self.headers = {"Jenkins-Crumb": crumb}
+        self.headers = {}
+        if crumb:
+            self.headers = {"Jenkins-Crumb": crumb}
 
-        self.url = "https://ci.cfengine.com/"
-        self.job_name = "pr-pipeline"
+        self.url = "https://mender-jenkins.mender.io/"
+        self.job_name = "mender-builder"
         self.job_url = "{}job/{}/".format(self.url, self.job_name)
         self.trigger_url = "{}buildWithParameters/api/json".format(self.job_url)
 
@@ -98,9 +95,9 @@ class Jenkins():
                 params[param_name] = str(prs[repo])
         params["BASE_BRANCH"] = str(branch)
         if title is not None:
-            description = "{} ({} {}@{})".format(title, "cf-bottom", repo_names, branch)
+            description = "{} ({} {}@{})".format(title, tom, repo_names, branch)
         else:
-            description = "Unnamed build (cf-bottom)"
+            description = "Unnamed build (tom)"
         params["BUILD_DESC"] = description
         return self.post(path, params)
 
@@ -123,7 +120,7 @@ class Jenkins():
 class GitHub():
     def __init__(self, token):
         self.token = token
-        self.headers = {"Authorization": "token {}".format(token), "User-Agent": "cf-bottom"}
+        self.headers = {"Authorization": "token {}".format(token), "User-Agent": tom}
         self.get_cache = {}
 
     def path(self, path):
@@ -264,8 +261,8 @@ class Tom():
 
         user = secrets["JENKINS_USER"]
         token = secrets["JENKINS_TOKEN"]
-        crumb = secrets["JENKINS_CRUMB"]
-        self.jenkins = Jenkins(user, token, crumb)
+        # crumb = secrets["JENKINS_CRUMB"]
+        self.jenkins = Jenkins(user, token, None)
         self.interactive = interactive
 
     def post(self, path, data, msg=None):
@@ -290,7 +287,7 @@ class Tom():
             print("")
 
     def ping_reviewer(self, pr):
-        if "cf-bottom" in pr.comments.users:
+        if tom in pr.comments.users:
             log.info("I have already commented :)")
         elif len(pr.comments) > 0:
             log.info("There are already comments there, so I won't disturb")
@@ -367,9 +364,9 @@ class Tom():
 
     def handle_comments(self, pr):
         for comment in reversed(pr.comments):
-            if comment.author == "cf-bottom":
+            if comment.author == tom:
                 return
-            if "@cf-bottom" in comment:
+            if "@"+tom in comment:
                 self.handle_mention(pr, comment)
 
     def handle_pr(self, pr):
@@ -383,7 +380,7 @@ class Tom():
 
     def run(self):
         self.repos = self.github.get("/user/repos")
-        self.repos += self.github.get("/orgs/cfengine/repos")
+        self.repos += self.github.get("/orgs/mendersoftware/repos")
 
         # Remove duplicate repos:
         repos_map = {repo["full_name"]: repo for repo in self.repos}
@@ -391,6 +388,8 @@ class Tom():
 
         self.pulls = []
         for repo in self.repos:
+            if repo["full_name"] != "mendersoftware/mender":
+                continue
             log.info("Fetching pull requests for {}".format(repo["full_name"]))
             pulls = self.github.get(repo["url"] + "/pulls")
             if pulls:
@@ -408,7 +407,7 @@ class Tom():
 
 def run_tom(interactive, secrets_dir):
     secrets = {}
-    names = ["GITHUB_TOKEN", "JENKINS_CRUMB", "JENKINS_USER", "JENKINS_TOKEN"]
+    names = ["GITHUB_TOKEN", "JENKINS_USER", "JENKINS_TOKEN"]
     for n in names:
         secrets[n] = get_var(n, secrets_dir)
     tom = Tom(secrets, interactive)
