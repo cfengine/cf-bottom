@@ -225,6 +225,241 @@ class GitHub():
         return "/repos/{}/{}/issues/{}/comments".format(owner, repo, issue)
 
 
+class GitHubInterface():
+    """class responsible for providing high-level user-visible commands"""
+
+    def __init__(self, github, slack, dispatcher):
+        self.github = github
+        self.slack = slack
+        try:
+            with open('github_usernames.json') as f:
+                self.github_usernames = json.load(f)
+        except:
+                self.github_usernames = {}
+        dispatcher.register_command('github',
+                lambda username: self.set_account(username),
+                'username',
+                'Register your github username',
+                'Saves association between Slack and Github account names. '+
+                'Required for `repo` and `pr` commands')
+        dispatcher.register_command('repos',
+                lambda: self.update_repos(),
+                False,
+                'Find your forks of private cfengine and mendersoftware repos',
+                "There is no single API call to list all visible private repos for "+
+                "a given user, so we have to loop through all cfengine and mender "+
+                "private repos trying to find a fork belonging to current user. "+
+                "This takes time so instead of doing it on every `pr` command, "+
+                "we store this in cache. And this command refreshes the cache")
+        dispatcher.register_command('pr', lambda: self.create_pr_magic(), False,
+                'make pull request from the branch you last pushed to', "")
+
+    def set_account(self, username):
+        """Saves association between Slack username and GitHub account.
+        Slack username is author of current message being processed by bot,
+        Github username passed as argument.
+        """
+
+        self.github_usernames[self.slack.reply_to_user] = username
+        with open('github_usernames.json', 'w') as f:
+            json.dump(self.github_usernames, f, indent=2)
+        self.slack.reply(("I will remember that your github username is {}. "+
+                "Now say \"<@{}> repos\" for me to update list of your private repos")\
+                .format(username, self.slack.my_username), True)
+
+    def get_github_name(self):
+        """Returns Github username belonging to author of current Slack message.
+        If there is none (i.e. he didn't specify it) - answer with a Slack message
+        and return None.
+        Calling method should work correctly if returned value is None!
+        """
+        if not self.slack.reply_to_user in self.github_usernames:
+            self.slack.reply(("I don't know your github username. "+
+                    "Please say \"<@{}> github: USERNAME\" "+
+                    "to identify yourself").format(self.slack.my_username), True)
+            return None
+        return self.github_usernames[self.slack.reply_to_user]
+
+    def update_repos(self, username=None):
+        """Find and save list of all private repos belonging to a user.
+        Args:
+            username - optional Github username of a user whose repos to update.
+            If it's not passed or is falsy, get github username of a user whos
+            Slack message we're currently processing.
+        Reason:
+            This is needed because Github doesn't provide a nice API to see
+            other user's _private_ repos, even if we have access to them.
+            i.e. if users cf-bottom and Lex-2008 are both part of 'cfengine' org,
+            and Lex-2008 forked cfengine/secrets *private* repo, the only way
+            for cf-bottom to reach this repo is:
+            * Enumerate all private repos of cfengine org
+            * And for each of them, find fork(s) belonging to Lex-2008
+            This takes some time, so to speed things up we store this in cache
+            and update periodically (TODO) or by request.
+        """
+        if not username:
+            username = self.get_github_name()
+        if not username:
+            return
+        message = ('Looking for all forks of private repos from '+
+                'cfengine and mendersoftware orgs for {} user...').format(username)
+        log.info(message)
+        self.slack.reply(message)
+        user_repos = []
+        log.info('getting org repos')
+        # TODO: get orgs dynamically
+        org_repos = self.github.get("/orgs/cfengine/repos?type=private")
+        org_repos += self.github.get("/orgs/mendersoftware/repos?type=private")
+        org_repos_with_forks = [repo for repo in org_repos if repo['forks'] > 0]
+        for repo in org_repos_with_forks:
+            log.info('getting forks for '+repo['full_name'])
+            repo_forks = self.github.get(repo['forks_url'])
+            user_forks = [repo for repo in repo_forks if
+                    repo['owner']['login'] == username]
+            user_repos += user_forks
+            if len(user_forks) > 0:
+                log.info('found repos:'+str(len(user_forks)))
+        # TODO: here we assume that user repos always start with username.
+        # Make it more explict or cleanup
+        user_repo_names = [repo['name'] for repo in user_repos]
+        os.makedirs('github_repos', exist_ok=True)
+        with open('github_repos/{}.json'.format(username), 'w') as f:
+            json.dump(user_repo_names, f, indent=2)
+        message = (('I will remember that you have {} private repos:'+
+                '\n```\n{}\n```\n'+
+                'Next time you add a new private fork you want me to be aware of, '+
+                'say \"<@{}> repos\" so I refreshed the list. '+
+                "Note that public repos are easy-listable, so you don't need to "+
+                "bother about them").\
+                format(len(user_repo_names),
+                    '\n'.join(sorted(user_repo_names)),
+                    self.slack.my_username))
+        log.info(message)
+        self.slack.reply(message, True)
+
+    def get_user_repos(self, username):
+        """Returns list of private repos known to belong to GutHub user username.
+        Updates such list if can't be loaded from file.
+        """
+        try:
+            with open('github_repos/{}.json'.format(username)) as f:
+                return json.load(f)
+        except:
+            self.update_repos(username)
+            with open('github_repos/{}.json'.format(username)) as f:
+                return json.load(f)
+        # TODO: maybe print something if the list is empty?
+
+    def find_last_repo(self, username):
+        """Returns name of repository belonging to GitHub user username with highest
+        (most recent) 'pushed' date
+        """
+        repo_names = self.get_user_repos(username)
+        if len(repo_names) == 0:
+            return None
+        user_repos = [self.github.get("/repos/{}/{}".format(username, repo))
+                for repo in repo_names]
+        open_repo = self.github.get("/users/{}/repos?sort=pushed".format(username))[0]
+        log.info('adding open repo: '+open_repo['name'])
+        user_repos.append(open_repo)
+        date_repos = dict([(repo['pushed_at'], repo['name']) for repo in user_repos])
+        last_date = sorted(date_repos.keys())[-1]
+        return date_repos[last_date]
+
+    def find_last_branch_in_repo(self, username, repo):
+        """Returns name of branch in username/repo repository with highest
+        (most recent) 'committed' date
+        """
+        repo_branches = self.github.get("/repos/{}/{}/branches"\
+                .format(username, repo))
+        date_branches = {}
+        for branch in repo_branches:
+            branch_name = branch['name']
+            branch_commit = self.github.get("/repos/{}/{}/commits/{}"\
+                    .format(username, repo, branch_name))
+            branch_date = branch_commit['commit']['committer']['date']
+            log.info('branch {} has date {}'.format(branch_name, branch_date))
+            date_branches[branch_date] = branch_name
+        last_date = sorted(date_branches.keys())[-1]
+        return date_branches[last_date]
+
+    def find_parent_repo(self, username, repo):
+        """Returns full name (cfengine/core) of a repository from which
+        username/repo repository was forked from. If it can't be found for any
+        reason, returns username/repo itself
+        """
+        repo_info = self.github.get("/repos/{}/{}".format(username, repo))
+        try:
+            return repo_info['parent']['full_name'] # cfengine/core
+        except:
+            log.debug('using current repo as parent')
+            return '{}/{}'.format(username, repo)
+
+    def find_parent(self, username, repo, last_branch):
+        """Returns tuple of parent repository (found by find_parent_repo function)
+        and parent branch for a given last_branch branch in username/repo repository.
+        i.e. branch where last_branch should most probably be merged into.
+        This is done on prefix match - if last_branch is called '3.10-something',
+        then it's probably should be merged into branch '3.10.x' in parent_repo.
+        Otherwise, parent_branch defaults to 'master'
+        """
+        parent_repo = self.find_parent_repo(username, repo)
+        parent_branches = self.github.get("/repos/{}/branches".format(parent_repo))
+        parent_branch = 'master'
+        for branch in parent_branches:
+            branch_name = branch['name']
+            short_branch_name = re.sub('.x$','', branch_name)
+            log.debug('trying branch ' + branch_name)
+            if last_branch.startswith(short_branch_name):
+                log.debug('it matches! old parent {} new parent {}'\
+                        .format(parent_branch, branch_name))
+                if parent_branch == 'master':
+                    parent_branch = branch_name
+                else:
+                    # we already found one candidate to be a parent branch.
+                    # Use candidate with shortest prefix.
+                    # i.e. if we have three branches named like this:
+                    # * feature
+                    # * feature-fix
+                    # * feature-fixup
+                    # then we assume that "feature-fixup"
+                    # should be merged to "feature"
+                    if len(parent_branch) > len(branch_name):
+                        parent_branch = branch_name
+        return (parent_repo, parent_branch)
+
+    def create_pr_magic(self):
+        """Create pull request for a branch where author of current slack
+        message last pushed to
+        """
+        username = self.get_github_name()
+        if not username:
+            return
+        message = 'Creating PR for {} user. Finding the last pushed-to repo...'\
+                .format(username)
+        log.info(message)
+        self.slack.reply(message)
+        repo = self.find_last_repo(username)
+        if not repo:
+            return
+        message = ("You last pushed to {} repo. "+
+                "Looking for the branch with most recent commit...").\
+                format(repo)
+        log.info(message)
+        self.slack.reply(message)
+        last_branch = self.find_last_branch_in_repo(username, repo)
+        log.info('last branch: ' + last_branch)
+        # now, try to find a parent for it.
+        (parent_repo, parent_branch) = self.find_parent(username, repo, last_branch)
+        log.info('parent branch: ' + parent_branch)
+        pr_text = self.github.create_pr(parent_repo, parent_branch,
+                username, last_branch, last_branch+' PR', '')
+        message = ("Found last branch: {}, corresponding parent branch: {} "+
+                "in parent repo: {}. {}")\
+                .format(last_branch, parent_branch, parent_repo, pr_text)
+        log.info(message)
+        self.slack.reply(message, True)
+
 class Comment():
     def __init__(self, data):
         self.data = data
@@ -513,6 +748,7 @@ class Tom():
         self.slack = Slack(bot_token, app_token)
 
         self.dispatcher = CommandDispatcher(self.slack)
+        self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
         self.interactive = interactive
 
     def post(self, path, data, msg=None):
