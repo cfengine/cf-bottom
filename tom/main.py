@@ -1,18 +1,6 @@
 import os
-# import sys
-# import json
 import argparse
-# import requests
-# import datetime
-# import hashlib
-# import random
-# import re
-# import traceback
-# import subprocess
 import logging as log
-# import urllib.request
-# from copy import copy
-# from time import sleep
 
 from tom.bot import Tom
 

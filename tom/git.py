@@ -1,3 +1,6 @@
+import subprocess
+
+
 class GitRepo():
     """Class responsible for working with locally checked-out repository"""
 

@@ -1,3 +1,5 @@
+from time import sleep
+import requests
 from requests.auth import HTTPBasicAuth
 
 

@@ -1,3 +1,10 @@
+import re
+import requests
+import datetime
+import hashlib
+import urllib.request
+
+
 class UpdateChecker():
     """Class responsible for doing dependency updates"""
 

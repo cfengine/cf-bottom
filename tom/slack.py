@@ -1,3 +1,8 @@
+import traceback
+import re
+import requests
+
+
 class Slack():
     """Class responsible for all iteractions with Slack, EXCEPT for receiving
     messages (They are received as HTTPS requests from Slack to a webserver,

@@ -1,8 +1,12 @@
+import sys
+import random
+import json
 import logging as log
 
 from tom.github import GitHub, GitHubInterface, PR
 from tom.jenkins import Jenkins
 from tom.slack import CommandDispatcher
+from tom.utils import confirmation
 
 
 class Tom():
