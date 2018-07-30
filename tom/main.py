@@ -1158,6 +1158,8 @@ def main():
         log.basicConfig(level=numeric_level, format=fmt)
     else:
         log.basicConfig(format=fmt)
+    log.getLogger("requests").setLevel(log.WARNING)
+    log.getLogger("urllib3").setLevel(log.WARNING)
     if args.continuous:
         while True:
             run_tom(args.interactive, args.talk)
