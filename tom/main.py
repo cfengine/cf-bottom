@@ -432,6 +432,71 @@ class Slack():
         self.send_message(self.reply_to_channel, text)
 
 
+class CommandDispatcher():
+    """Class responsible for processing user input (Slack messages) and
+    dispatching relevant commands
+    """
+
+    def __init__(self, slack):
+        self.slack = slack
+        self.help_lines = ['List of commands bot recognises '+
+                '(prefix each command with bot name)']
+        self.commands = [{},{}]
+        self.register_command('help', lambda: self.show_help(), False,
+                'Show this text', 'Shows overview of all commands')
+
+    def register_command(self, keyword, callback, parameter_name, short_help, long_help=''):
+        """Register a command as recognised by Tom.
+        Args:
+            keyword - text that Tom should react to
+            callback - function that should be called when Tom receives a
+                message with keyword
+            parameter_name - name of parameter for commands with parameter, or
+                False for commands without
+            short_help - short description of command (Tom prints it in reply
+                to `@cf-bottom help` command)
+            long_help - long description of command (Tom will print it in reply
+                to `@cf-bottom help on <keyword>` command - TODO: implement)
+        """
+        parameters_count = 1 if parameter_name else 0
+        self.commands[parameters_count][keyword] = {
+                'callback': callback,
+                'long_help': long_help
+                }
+        if parameter_name:
+            self.help_lines.append('{}: _{}_\n-  {}'.format(keyword, parameter_name.upper(), short_help))
+        else:
+            self.help_lines.append('{}\n-  {}'.format(keyword, short_help))
+
+    def parse_text(self, text):
+        """Analyze user message and react on it - call a registered command"""
+        # remove bot username from string
+        text = re.sub('<@{}> *:? *'.format(self.slack.my_username), '', text)
+        m = re.match(' *([^:]*)(?:[:] *([^ ]*))?', text)
+        keyword = m.group(1)
+        argument = m.group(2)
+        if argument:
+            parameters_count = 1
+            arguments = [argument]
+        else:
+            parameters_count = 0
+            arguments = []
+        if keyword in self.commands[parameters_count]:
+            try:
+                self.commands[parameters_count][keyword]['callback'](*arguments)
+            except:
+                self.slack.reply('I crashed on your command:'+
+                        '\n```\n{}\n```'.format(traceback.format_exc()), True)
+        else:
+            self.slack.reply(("Unknown command. Say \"<@{}> help\" for "+
+                "list of known commands")\
+                .format(self.slack.my_username))
+
+    def show_help(self):
+        """Print basic help info"""
+        self.slack.reply('\n\n'.join(self.help_lines))
+
+
 class Tom():
     def __init__(self, secrets, interactive):
         github = secrets["GITHUB_TOKEN"]
@@ -447,6 +512,7 @@ class Tom():
         app_token = secrets["SLACK_APP_TOKEN"]
         self.slack = Slack(bot_token, app_token)
 
+        self.dispatcher = CommandDispatcher(self.slack)
         self.interactive = interactive
 
     def post(self, path, data, msg=None):
@@ -586,14 +652,34 @@ class Tom():
             self.handle_pr(pull)
         log.info("Tom successful")
 
+    def talk(self, message):
+        log.debug(pretty(message))
+        if 'token' not in message or message['token'] != self.slack_read_token:
+            log.warning('unauthorised message, ignoring')
+            return
+        if 'authed_users' in message and len(message['authed_users']) > 0:
+            self.slack.my_username = message['authed_users'][0]
+        message = message['event']
+        if not 'user' in message:
+            # not a user-generated message
+            # probably a bot-generated message
+            log.warning('not a user message, ignoring')
+            return
+        self.slack.set_reply_to(message)
+        self.dispatcher.parse_text(message['text'])
 
-def run_tom(interactive, secrets_dir):
+
+def run_tom(interactive, secrets_dir, talk_mode):
     secrets = {}
     names = ["GITHUB_TOKEN", "JENKINS_CRUMB", "JENKINS_USER", "JENKINS_TOKEN", "SLACK_READ_TOKEN", "SLACK_SEND_TOKEN", "SLACK_APP_TOKEN"]
     for n in names:
         secrets[n] = get_var(n, secrets_dir)
     tom = Tom(secrets, interactive)
-    tom.run()
+    if talk_mode:
+        message = json.load(sys.stdin)
+        tom.talk(message)
+    else:
+        tom.run()
 
 
 def get_var(name, dir="./"):
@@ -620,6 +706,7 @@ def get_args():
         '--continuous', '-c', help='Run in a loop, exits on error/failures', action="store_true")
     argparser.add_argument(
         '--secrets', '-s', help='Directory to read secrets', default="./", type=str)
+    argparser.add_argument('--talk', '-t', help="Run Tom in talk mode, when it reads Slack message from stdin", action="store_true")
     argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
     args = argparser.parse_args()
 
@@ -638,11 +725,11 @@ def main():
         log.basicConfig(format=fmt)
     if args.continuous:
         while True:
-            run_tom(args.interactive)
+            run_tom(args.interactive, args.talk)
             print("Iteration complete, sleeping for 12 seconds")
             sleep(12)
     else:
-        run_tom(args.interactive, args.secrets)
+        run_tom(args.interactive, args.secrets, args.talk)
 
 
 if __name__ == "__main__":
