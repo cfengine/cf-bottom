@@ -1,0 +1,36 @@
+{
+  "bots": [
+    {
+      "username": "cf-bottom",
+      "secrets": "cfengine-secrets.json",
+      "trusted": ["nickanderson", "vpodzime", "craigcomstock", "olehermanse", "Lex-2008", "karlhto"],
+      "reviewers": ["olehermanse", "vpodzime"],
+      "jenkins": "https://ci.cfengine.com/",
+      "jenkins_job": "pr-pipeline",
+      "orgs": ["cfengine"],
+      "repos": {
+        "cfengine/core": ["olehermanse", "vpodzime"],
+        "cfengine/enterprise": ["olehermanse", "vpodzime", "craigcomstock"],
+        "cfengine/nova": ["olehermanse", "vpodzime", "craigcomstock"],
+        "cfengine/masterfiles": ["craigcomstock", "nickanderson"],
+        "cfengine/buildscripts": ["craigcomstock", "Lex-2008"],
+        "cfengine/documentation": ["nickanderson", "craigcomstock"],
+        "cfengine/contrib": ["nickanderson"],
+        "cf-bottom/self": ["olehermanse", "vpodzime", "cf-bottom", "karlhto"]
+      }
+    },
+    {
+      "username": "mender-bottom",
+      "secrets": "mender-secrets.json",
+      "trusted": ["oleorhagen", "kacf", "pasinskim",  "olehermanse"],
+      "reviewers": ["oleorhagen", "kacf"],
+      "jenkins": "https://mender-jenkins.mender.io/",
+      "jenkins_job": "mender-builder",
+      "orgs": [],
+      "repos": {
+        "mendersoftware/mender": ["kacf", "oleorhagen", "pasinskim"],
+        "mendersoftware/gui": ["michaelatmender"]
+      }
+    }
+  ]
+}
