@@ -60,7 +60,7 @@ class Bot():
             print("")
 
     def ping_reviewer(self, pr):
-        if "cf-bottom" in pr.comments.users:
+        if self.username in pr.comments.users:
             log.info("I have already commented :)")
         elif len(pr.comments) > 0:
             log.info("There are already comments there, so I won't disturb")
@@ -74,7 +74,7 @@ class Bot():
             self.comment(pr, comment)
 
     def review(self, pr):
-        tom = "cf-bottom"
+        tom = self.username
         if tom not in pr.maintainers:
             return
         if tom in pr.approvals:
@@ -140,7 +140,7 @@ class Bot():
 
     def handle_comments(self, pr):
         for comment in reversed(pr.comments):
-            if comment.author == "cf-bottom":
+            if comment.author == self.username:
                 return
             if "@" + self.username in comment:
                 self.handle_mention(pr, comment)
