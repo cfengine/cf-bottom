@@ -11,22 +11,22 @@ from tom.utils import confirmation, pretty
 
 
 class Bot():
-    def __init__(
-            self, username, secrets, orgs, repo_maintainers, jenkins, job, maintainers, trusted,
-            directory, interactive):
-        self.username = username
+    def __init__(self, config, secrets, directory, interactive):
         self.secrets = secrets
-        self.orgs = orgs
-        self.repo_maintainers = repo_maintainers
-        self.jenkins = Jenkins(jenkins, job, secrets)
-        self.default_maintainers = maintainers
-        self.trusted = trusted
         self.directory = directory
         self.interactive = interactive
+
+        self.username = config["username"]
+        self.orgs = config["orgs"]
+        self.repo_maintainers = config["repos"]
+        self.default_maintainers = config["reviewers"]
+        self.trusted = config["trusted"]
+
+        self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets)
         self.github = GitHub(secrets["GITHUB_TOKEN"])
 
         self.slack = None
-        if "SLACK_READ_TOKEN" in secrets:
+        try:
             self.slack_read_token = secrets["SLACK_READ_TOKEN"]
             bot_token = secrets["SLACK_SEND_TOKEN"]
             app_token = secrets["SLACK_APP_TOKEN"]
@@ -34,8 +34,9 @@ class Bot():
 
             self.dispatcher = CommandDispatcher(self.slack)
             self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
-        # self.updater = UpdateChecker(self.github, self.slack, self.dispatcher)
-        self.interactive = interactive
+            # self.updater = UpdateChecker(self.github, self.slack, self.dispatcher)
+        except KeyError:
+            log.info("Skipping slack integration, secrets missing")
 
     def post(self, path, data, msg=None):
         if self.interactive:

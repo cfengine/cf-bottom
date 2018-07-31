@@ -7,18 +7,9 @@ from tom.utils import read_json, user_error
 
 
 def setup_bot(directory, interactive, data):
-    username = data["username"]
     secrets = data["secrets_data"]
-
-    orgs = data["orgs"]
-    repos = data["repos"]
-    jenkins = data["jenkins"]
-    job = data["jenkins_job"]
-    reviewers = data["reviewers"]
-    trusted = data["trusted"]
-
-    return Bot(
-        username, secrets, orgs, repos, jenkins, job, reviewers, trusted, directory, interactive)
+    del data["secrets_data"]
+    return Bot(data, secrets, directory, interactive)
 
 
 def run_talk(directory, user):
@@ -42,7 +33,6 @@ def load_config(directory):
     assert config
 
     for bot_data in config["bots"]:
-
         secrets_path = bot_data["secrets"]
         if not secrets_path.startswith("/"):
             secrets_path = os.path.join(directory, secrets_path)
