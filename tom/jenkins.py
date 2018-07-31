@@ -6,7 +6,7 @@ from tom.utils import pretty
 
 
 class Jenkins():
-    def __init__(self, url, job, secrets):
+    def __init__(self, url, job, secrets, username):
         self.url = url
 
         user = secrets["JENKINS_USER"]
@@ -16,6 +16,7 @@ class Jenkins():
         self.user = user
         self.token = token
         self.crumb = crumb
+        self.username = username
 
         self.auth = HTTPBasicAuth(user, token)
 
@@ -48,9 +49,9 @@ class Jenkins():
                 params[param_name] = str(prs[repo])
         params["BASE_BRANCH"] = str(branch)
         if title is not None:
-            description = "{} ({} {}@{})".format(title, "cf-bottom", repo_names, branch)
+            description = "{} ({} {}@{})".format(title, self.username, repo_names, branch)
         else:
-            description = "Unnamed build (cf-bottom)"
+            description = "Unnamed build ({})".format(self.username)
         params["BUILD_DESC"] = description
         return self.post(path, params)
 

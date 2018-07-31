@@ -22,15 +22,15 @@ class Bot():
         self.default_maintainers = config["reviewers"]
         self.trusted = config["trusted"]
 
-        self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets)
-        self.github = GitHub(secrets["GITHUB_TOKEN"])
+        self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets, self.username)
+        self.github = GitHub(secrets["GITHUB_TOKEN"], self.username)
 
         self.slack = None
         try:
             self.slack_read_token = secrets["SLACK_READ_TOKEN"]
             bot_token = secrets["SLACK_SEND_TOKEN"]
             app_token = secrets["SLACK_APP_TOKEN"]
-            self.slack = Slack(bot_token, app_token)
+            self.slack = Slack(bot_token, app_token, self.username)
 
             self.dispatcher = CommandDispatcher(self.slack)
             self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
