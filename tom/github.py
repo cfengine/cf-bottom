@@ -8,48 +8,6 @@ import requests
 
 from tom.utils import pretty
 
-# Global constants for convenience
-
-nick = "nickanderson"
-vratislav = "vpodzime"
-craig = "craigcomstock"
-ole = "olehermanse"
-aleksei = "Lex-2008"
-tom = "cf-bottom"
-karl = "karlhto"
-
-trusted = [nick, vratislav, craig, ole, aleksei, karl]
-
-repos = {
-    "cfengine/core": [ole, vratislav],
-    "cfengine/enterprise": [ole, vratislav, craig],
-    "cfengine/nova": [ole, vratislav, craig],
-    "cfengine/masterfiles": [craig, nick],
-    "cfengine/buildscripts": [craig, aleksei],
-    "cfengine/documentation": [nick, craig],
-    "cfengine/contrib": [nick],
-    "cf-bottom/self": [ole, vratislav, tom, karl]
-}
-
-
-def get_maintainers(repo, exclude=None):
-    if not exclude:
-        exclude = []
-    assert type(exclude) is list
-
-    defaults = [ole, vratislav]
-
-    reviewers = []
-
-    if repo in repos:
-        reviewers += repos[repo]
-    for person in exclude:
-        if person in reviewers:
-            reviewers.remove(person)
-    if len(reviewers) == 0:
-        reviewers = copy(defaults)
-    return reviewers
-
 
 class GitHub():
     def __init__(self, token):
@@ -448,16 +406,6 @@ class PR():
             self.labels = [label["name"].lower() for label in data["labels"]]
 
         self.comments = Comments(self.github.get(self.comments_url), github)
-
-        self.maintainers = get_maintainers(self.repo)
-        self.reviewers = get_maintainers(self.repo, exclude=[self.author])
-        if self.author in self.reviewers:
-            self.reviewers.remove(self.author)
-        if tom in self.reviewers:
-            self.reviewers.remove(tom)
-        if len(self.reviewers) > 1 and nick in self.reviewers:
-            self.reviewers.remove(nick)
-        self.reviewer = random.choice(self.reviewers)
 
         self.reviews = self.github.get(self.reviews_url)
         self.approvals = []

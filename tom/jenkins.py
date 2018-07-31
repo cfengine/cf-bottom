@@ -1,19 +1,29 @@
+import logging as log
 from time import sleep
 import requests
 from requests.auth import HTTPBasicAuth
+from tom.utils import pretty
 
 
 class Jenkins():
-    def __init__(self, user, token, crumb):
+    def __init__(self, url, job, secrets):
+        self.url = url
+
+        user = secrets["JENKINS_USER"]
+        token = secrets["JENKINS_TOKEN"]
+        crumb = secrets["JENKINS_CRUMB"] if "JENKINS_CRUMB" in secrets else None
+
         self.user = user
         self.token = token
         self.crumb = crumb
 
         self.auth = HTTPBasicAuth(user, token)
-        self.headers = {"Jenkins-Crumb": crumb}
 
-        self.url = "https://ci.cfengine.com/"
-        self.job_name = "pr-pipeline"
+        self.headers = {}
+        if crumb:
+            self.headers["Jenkins-Crumb"] = crumb
+
+        self.job_name = job
         self.job_url = "{}job/{}/".format(self.url, self.job_name)
         self.trigger_url = "{}buildWithParameters/api/json".format(self.job_url)
 

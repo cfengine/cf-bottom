@@ -4,11 +4,11 @@ import subprocess
 class GitRepo():
     """Class responsible for working with locally checked-out repository"""
 
-    def __init__(self, dirname, url):
+    def __init__(self, dirname, url, username):
         self.dirname = dirname
         self.url = url
-        self.username = tom
-        self.usermail = tom + '@cfengine.com'
+        self.username = username
+        self.usermail = username + '@cfengine.com'
 
         if os.path.exists(dirname):
             # assume it's configured properly
