@@ -60,7 +60,7 @@ class Jenkins():
         while "executable" not in queue_item:
             log.info("Waiting for jenkins build in queue")
             sleep(1)
-            r = requests.get(url + "api/json")
+            r = requests.get(url + "api/json", headers=self.headers, auth=self.auth)
             assert r.status_code >= 200 and r.status_code < 300
             queue_item = r.json()
         log.debug(pretty(queue_item))
