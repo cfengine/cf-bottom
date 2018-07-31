@@ -177,7 +177,8 @@ class UpdateChecker():
         """Run the dependency update for a branch, creating PR in the end"""
         self.slack.reply("Running dependency updates for " + branch)
         # prepare repo
-        self.buildscripts = GitRepo('../buildscripts', 'git@github.com:cfengine/buildscripts.git')
+        self.buildscripts = GitRepo(
+            '../buildscripts', 'git@github.com:cfengine/buildscripts.git', "cf-bottom")
         self.buildscripts.checkout(branch)
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = '{}-deps-{}'.format(branch, timestamp)

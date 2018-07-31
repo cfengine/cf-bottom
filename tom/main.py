@@ -2,35 +2,78 @@ import os
 import argparse
 import logging as log
 
-from tom.bot import Tom
+from tom.bot import Bot
+from tom.utils import read_json, user_error
 
 
-def run_tom(interactive, secrets_dir, talk_mode):
-    secrets = {}
-    names = [
-        "GITHUB_TOKEN", "JENKINS_CRUMB", "JENKINS_USER", "JENKINS_TOKEN", "SLACK_READ_TOKEN",
-        "SLACK_SEND_TOKEN", "SLACK_APP_TOKEN"
-    ]
-    for n in names:
-        secrets[n] = get_var(n, secrets_dir)
-    tom = Tom(secrets, interactive)
-    if talk_mode:
-        tom.talk()
-    else:
-        tom.run()
+def setup_bot(directory, interactive, data):
+    username = data["username"]
+    secrets = data["secrets_data"]
+
+    orgs = data["orgs"]
+    repos = data["repos"]
+    jenkins = data["jenkins"]
+    job = data["jenkins_job"]
+    reviewers = data["reviewers"]
+    trusted = data["trusted"]
+
+    return Bot(
+        username, secrets, orgs, repos, jenkins, job, reviewers, trusted, directory, interactive)
 
 
-def get_var(name, dir="./"):
-    var = None
-    if name in os.environ:
-        var = os.environ[name]
-    else:
-        try:
-            with open(os.path.join(dir, name), "r") as f:
-                var = f.read().strip()
-        except (PermissionError, FileNotFoundError):
-            pass
-    return var
+def run_talk(directory, user):
+    config = load_config(directory)
+    assert len(config["bots"]) > 0
+    for bot_data in config["bots"]:
+        if bot_data["username"] == user:
+            bot = setup_bot(directory, False, bot_data)
+            bot.talk()
+            return
+    user_error("Couldn't find config for bot '{}'".format(user))
+
+
+def run_bot(directory, interactive, data):
+    bot = setup_bot(directory, interactive, data)
+    bot.run()
+
+
+def load_config(directory):
+    config = read_json(os.path.join(directory, "config.json"))
+    assert config
+
+    for bot_data in config["bots"]:
+
+        secrets_path = bot_data["secrets"]
+        if not secrets_path.startswith("/"):
+            secrets_path = os.path.join(directory, secrets_path)
+
+        bot_data["secrets_path"] = secrets_path
+        bot_data["secrets_data"] = None
+
+        if not os.path.isfile(secrets_path):
+            continue
+
+        bot_data["secrets_data"] = read_json(secrets_path)
+
+    return config
+
+
+def run_all(directory, interactive):
+    runs = 0
+    config = load_config(directory)
+    assert len(config["bots"]) > 0
+    for bot_data in config["bots"]:
+        secrets_data = bot_data["secrets_data"]
+        if not secrets_data:
+            log.warning(
+                "Skipping bot '{}', secrets file '{}' not found".format(
+                    bot_data["username"], bot_data["secrets_path"]))
+            continue
+
+        run_bot(directory, interactive, bot_data)
+        runs += 1
+    if runs <= 0:
+        user_error("Did not complete any runs, check config")
 
 
 def get_args():
@@ -38,16 +81,21 @@ def get_args():
     argparser.add_argument(
         '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
     argparser.add_argument(
-        '--continuous', '-c', help='Run in a loop, exits on error/failures', action="store_true")
+        '--directory',
+        '-d',
+        help='Directory to use for config, secrets and logs',
+        default="./",
+        type=str)
     argparser.add_argument(
-        '--secrets', '-s', help='Directory to read secrets', default="./", type=str)
-    argparser.add_argument(
-        '--talk',
+        '--talk-user',
         '-t',
         help="Run Tom in talk mode, when it reads Slack message from stdin",
-        action="store_true")
+        type=str)
     argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
     args = argparser.parse_args()
+
+    if args.talk_user and args.interactive:
+        user_error("Talk mode doesn't support interactive")
 
     return args
 
@@ -64,13 +112,10 @@ def main():
         log.basicConfig(format=fmt)
     log.getLogger("requests").setLevel(log.WARNING)
     log.getLogger("urllib3").setLevel(log.WARNING)
-    if args.continuous:
-        while True:
-            run_tom(args.interactive, args.talk)
-            print("Iteration complete, sleeping for 12 seconds")
-            sleep(12)
+    if args.talk_user:
+        run_talk(args.directory, args.talk_user)
     else:
-        run_tom(args.interactive, args.secrets, args.talk)
+        run_all(args.directory, args.interactive)
 
 
 if __name__ == "__main__":

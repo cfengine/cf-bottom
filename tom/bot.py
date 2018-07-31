@@ -2,34 +2,38 @@ import sys
 import random
 import json
 import logging as log
+from copy import copy
 
 from tom.github import GitHub, GitHubInterface, PR
 from tom.jenkins import Jenkins
 from tom.slack import CommandDispatcher
-from tom.utils import confirmation
+from tom.utils import confirmation, pretty
 
 
-class Tom():
-    def __init__(self, secrets, interactive):
-        github = secrets["GITHUB_TOKEN"]
-        self.github = GitHub(github)
+class Bot():
+    def __init__(
+            self, username, secrets, orgs, repo_maintainers, jenkins, job, maintainers, trusted,
+            directory, interactive):
+        self.username = username
+        self.secrets = secrets
+        self.orgs = orgs
+        self.repo_maintainers = repo_maintainers
+        self.jenkins = Jenkins(jenkins, job, secrets)
+        self.default_maintainers = maintainers
+        self.trusted = trusted
+        self.directory = directory
+        self.interactive = interactive
+        self.github = GitHub(secrets["GITHUB_TOKEN"])
 
-        user = secrets["JENKINS_USER"]
-        token = secrets["JENKINS_TOKEN"]
-        if not (user and token):
-            sys.exit("Cannot start Tom without Jenkins credentials")
-        crumb = secrets["JENKINS_CRUMB"]
-        self.jenkins = Jenkins(user, token, crumb)
-
-        self.slack_read_token = secrets["SLACK_READ_TOKEN"]
-        bot_token = secrets["SLACK_SEND_TOKEN"]
-        app_token = secrets["SLACK_APP_TOKEN"]
         self.slack = None
-        if self.slack_read_token and bot_token and app_token:
+        if "SLACK_READ_TOKEN" in secrets:
+            self.slack_read_token = secrets["SLACK_READ_TOKEN"]
+            bot_token = secrets["SLACK_SEND_TOKEN"]
+            app_token = secrets["SLACK_APP_TOKEN"]
             self.slack = Slack(bot_token, app_token)
 
-        self.dispatcher = CommandDispatcher(self.slack)
-        self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
+            self.dispatcher = CommandDispatcher(self.slack)
+            self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
         # self.updater = UpdateChecker(self.github, self.slack, self.dispatcher)
         self.interactive = interactive
 
@@ -85,8 +89,10 @@ class Tom():
                 print("Approved PR: {}".format(pr.title))
 
     def comment_badge(self, pr, num, url):
-        badge_icon = "https://ci.cfengine.com/buildStatus/icon?job=pr-pipeline&build={}".format(num)
-        badge_link = "https://ci.cfengine.com/job/pr-pipeline/{}/".format(num)
+        badge_icon = "{url}/buildStatus/icon?job={job}&build={num}".format(
+            url=self.jenkins.url, job=self.jenkins.job_name, num=num)
+        badge_link = "{url}/job/{job}/{num}/".format(
+            url=self.jenkins.url, job=self.jenkins.job_name, num=num)
         badge = "[![Build Status]({})]({})".format(badge_icon, badge_link)
         response = random.choice(["Alright", "Sure"])
         new_comment = "{}, I triggered a build:\n\n{}\n\n{}".format(response, badge, url)
@@ -117,8 +123,8 @@ class Tom():
 
     def handle_mention(self, pr, comment):
         deny = "@{} : I'm sorry, I cannot do that. @olehermanse please help.".format(comment.author)
-        if comment.author not in trusted or pr.base_user != "cfengine":
-            print("Denying mention from {} on base {}".format(comment.author, pr.base_user))
+        if comment.author not in self.trusted:
+            print("Denying mention from {}".format(comment.author))
             self.comment(pr, deny)
             return
         body = comment.body.lower()
@@ -135,30 +141,48 @@ class Tom():
         for comment in reversed(pr.comments):
             if comment.author == "cf-bottom":
                 return
-            if "@cf-bottom" in comment:
+            if "@" + self.username in comment:
                 self.handle_mention(pr, comment)
+
+    def find_reviewers(self, pr):
+        maintainers = self.default_maintainers
+        if pr.repo in self.repo_maintainers:
+            maintainers = self.repo_maintainers[pr.repo]
+
+        pr.maintainers = maintainers
+        pr.reviewers = copy(maintainers)
+        if pr.author in pr.reviewers:
+            pr.reviewers.remove(pr.author)
+        if self.username in pr.reviewers:
+            pr.reviewers.remove(self.username)
+        if len(pr.reviewers) <= 0:
+            pr.reviewers = self.default_maintainers
+        pr.reviewer = random.choice(pr.reviewers)
 
     def handle_pr(self, pr):
         url = pr["url"].replace("https://api.github.com/repos/", "")
         log.info("Looking at: {} ({})".format(pr["title"], url))
-        pr = PR(pr, self.github)
 
+        pr = PR(pr, self.github)
+        self.find_reviewers(pr)
         self.ping_reviewer(pr)
         self.review(pr)
         self.handle_comments(pr)
 
     def run(self):
-        self.repos = self.github.get("/user/repos")
-        self.repos += self.github.get("/orgs/cfengine/repos")
+        self.repos = []
+        if self.orgs:
+            for org in self.orgs:
+                self.repos += self.github.get("/orgs/{}/repos".format(org))
 
-        # Remove duplicate repos:
-        repos_map = {repo["full_name"]: repo for repo in self.repos}
-        self.repos = [value for key, value in repos_map.items()]
+        self.repos = {repo["full_name"]: repo["url"] for repo in self.repos}
+        for repo in self.repo_maintainers:
+            self.repos[repo] = "/repos/" + repo
 
         self.pulls = []
-        for repo in self.repos:
-            log.info("Fetching pull requests for {}".format(repo["full_name"]))
-            pulls = self.github.get(repo["url"] + "/pulls")
+        for repo, url in self.repos.items():
+            log.info("Fetching pull requests for {}".format(repo))
+            pulls = self.github.get(url + "/pulls")
             if pulls:
                 self.pulls.extend(pulls)
 
@@ -179,7 +203,7 @@ class Tom():
 
         log.debug(pretty(message))
         if 'token' not in message or message['token'] != self.slack_read_token:
-            log.warning('unauthorised message, ignoring')
+            log.warning('Unauthorized message - ignoring')
             return
         if 'authed_users' in message and len(message['authed_users']) > 0:
             self.slack.my_username = message['authed_users'][0]
@@ -187,7 +211,7 @@ class Tom():
         if not 'user' in message:
             # not a user-generated message
             # probably a bot-generated message
-            log.warning('not a user message, ignoring')
+            log.warning('Not a user message - ignoring')
             return
         self.slack.set_reply_to(message)
         self.dispatcher.parse_text(message['text'])
