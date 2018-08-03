@@ -407,7 +407,7 @@ class PR():
 
         self.comments = Comments(self.github.get(self.comments_url), github)
         self.review_comments = Comments(
-            get_review_comments(self.github.get(self.reviews_url)), github)
+            self.get_review_comments(self.github.get(self.reviews_url)), github)
 
         self.reviews = self.github.get(self.reviews_url)
         self.approvals = []
