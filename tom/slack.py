@@ -10,10 +10,10 @@ class Slack():
     argument)
     """
 
-    def __init__(self, bot_token, app_token):
+    def __init__(self, bot_token, app_token, username):
         self.bot_token = bot_token
         self.app_token = app_token
-        self.my_username = 'cf-bottom'
+        self.my_username = username
 
     def api(self, name):
         return 'https://slack.com/api/' + name

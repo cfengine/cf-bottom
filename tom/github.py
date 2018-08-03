@@ -10,9 +10,9 @@ from tom.utils import pretty
 
 
 class GitHub():
-    def __init__(self, token):
+    def __init__(self, token, user_agent):
         self.token = token
-        self.headers = {"Authorization": "token {}".format(token), "User-Agent": "cf-bottom"}
+        self.headers = {"Authorization": "token {}".format(token), "User-Agent": user_agent}
         self.get_cache = {}
 
     def path(self, path):

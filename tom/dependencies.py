@@ -8,9 +8,10 @@ import urllib.request
 class UpdateChecker():
     """Class responsible for doing dependency updates"""
 
-    def __init__(self, github, slack, dispatcher):
+    def __init__(self, github, slack, dispatcher, username):
         self.github = github
         self.slack = slack
+        self.username = username
         dispatcher.register_command(
             'deps', lambda branch: self.run(branch), 'branch', 'Run dependency updates',
             'Try to find new versions of dependencies on given branch ' + 'and create PR with them')
@@ -179,8 +180,7 @@ class UpdateChecker():
         # prepare repo
         local_path = "../buildscripts"
         ssh_target = "git@github.com:cfengine/buildscripts.git"
-        bot_user = "cf-bottom"
-        self.buildscripts = GitRepo(local_path, ssh_target, bot_user)
+        self.buildscripts = GitRepo(local_path, ssh_target, self.username)
         self.buildscripts.checkout(branch)
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = '{}-deps-{}'.format(branch, timestamp)
