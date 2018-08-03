@@ -406,8 +406,6 @@ class PR():
             self.labels = [label["name"].lower() for label in data["labels"]]
 
         self.comments = Comments(self.github.get(self.comments_url), github)
-        self.review_comments = Comments(
-            self.get_review_comments(self.github.get(self.reviews_url)), github)
 
         self.reviews = self.github.get(self.reviews_url)
         self.approvals = []
@@ -426,14 +424,3 @@ class PR():
     def has_label(self, label_name):
         label_name = label_name.lower()
         return label_name in self.labels
-
-    def get_review_comments(self, reviews):
-        all_review_comments = []
-        for review in reviews:
-            log.debug(
-                "getting review_comments for: PR: {}, id: {}".format(
-                    review["pull_request_url"], review["id"]))
-            request_url = "/".join(self.review_url, review["id"], "comments")
-            review_comment = self.github.get(request_url)
-            all_review_comments.append(review_comment)
-        return review_comments
