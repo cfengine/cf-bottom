@@ -4,6 +4,15 @@ import datetime
 import hashlib
 import urllib.request
 
+class DependencyException(Exception):
+    """Base class for all exceptions in this file"""
+    pass
+
+class ReleaseMonitoringException(DependencyException):
+    """Exception that is risen if release-monitoring.org behaves unexpectedly"""
+    pass
+
+
 
 class UpdateChecker():
     """Class responsible for doing dependency updates"""
@@ -145,6 +154,24 @@ class UpdateChecker():
             return old_version
         return self.increase_version(old_version, increment, separator)
 
+    def get_version_from_monitoring(self, dep):
+        """Gets latest version of a dependency from release-monitoring.org site.
+        Returns latest version (string), or False if dependency not found in
+        release-monitoring.json file.
+        """
+        if dep not in self.monitoring_ids:
+            return False
+        id = self.monitoring_ids[dep]
+        url = 'https://release-monitoring.org/api/project/{}'.format(id)
+        try:
+            data = requests.get(url).json()
+        except:
+            raise ReleaseMonitoringException('Failed to do a request to release-monitoring.org website')
+        try:
+            return data['version']
+        except:
+            raise ReleaseMonitoringException('Failed to get version from data received from release-monitoring.org website')
+
     def update_single_dep(self, dep):
         """Check if new version of dependency dep was released and create
         commit updating it in *.spec, dist, source, and README.md files
@@ -159,7 +186,10 @@ class UpdateChecker():
         old_filename = re.sub('.* ', '', dist_file)
         old_url = '{}{}'.format(source_file, old_filename)
         (old_version, separator) = self.extract_version_from_filename(dep, old_filename)
-        new_version = self.find_new_version(old_url, old_version, separator)
+        new_version = self.get_version_from_monitoring(dep)
+        if not new_version:
+            log.warning('Dependency {} not found in release-monitoring.org or in data file'.format(dep))
+            new_version = self.find_new_version(old_url, old_version, separator)
         if new_version == old_version:
             # no update needed
             return False
@@ -199,6 +229,8 @@ class UpdateChecker():
         self.readme_file_path = 'deps-packaging/README.md'
         readme_file = self.buildscripts.get_file(self.readme_file_path)
         self.readme_lines = readme_file.split('\n')
+        self.monitoring_file_path = 'deps-packaging/release-monitoring.json'
+        self.monitoring_ids = json.loads(self.buildscripts.get_file(self.monitoring_file_path))
         updates_summary = []
         only_deps = self.get_deps_list(branch)
         for dep in only_deps:
