@@ -116,7 +116,7 @@ class UpdateChecker():
             version = re.search('w32-([0-9-]*)-rel', filename).group(1)
             separator = '-'
         else:
-            version = re.search('[-_]([0-9.]*)\.', filename).group(1)
+            version = re.search('[-_]([0-9.]*)[\.-]',filename).group(1)
             separator = '.'
         return (version, separator)
 
