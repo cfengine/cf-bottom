@@ -202,9 +202,6 @@ class UpdateChecker():
             return False
         message = 'Update {} from {} to {}'.format(dep, old_version, new_version)
         log.info(message)
-        spec_file_path = 'deps-packaging/{}/cfbuild-{}.spec'.format(dep, dep)
-        spec_file = self.buildscripts.get_file(spec_file_path)
-        spec_file = spec_file.replace(old_version, new_version)
         new_filename = old_filename.replace(old_version, new_version)
         dist_file = '{}  {}'.format(md5sum, new_filename)
         source_file = source_file.replace(old_version, new_version)
@@ -218,6 +215,14 @@ class UpdateChecker():
         self.buildscripts.put_file(spec_file_path, spec_file + '\n')
         self.buildscripts.put_file(source_file_path, source_file + '\n')
         self.buildscripts.put_file(self.readme_file_path, readme_file)
+        spec_file_path = 'deps-packaging/{}/cfbuild-{}.spec'.format(dep, dep)
+        try:
+            spec_file = self.buildscripts.get_file(spec_file_path)
+        except:
+            pass
+        else:
+            spec_file = spec_file.replace(old_version, new_version)
+            self.buildscripts.put_file(spec_file_path, spec_file+'\n')
         self.buildscripts.commit(message)
         return message
 
