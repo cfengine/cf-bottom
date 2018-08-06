@@ -6,7 +6,8 @@ from copy import copy
 
 from tom.github import GitHub, GitHubInterface, PR
 from tom.jenkins import Jenkins
-from tom.slack import CommandDispatcher
+from tom.slack import Slack, CommandDispatcher
+from tom.dependencies import UpdateChecker
 from tom.utils import confirmation, pretty
 
 
@@ -25,18 +26,15 @@ class Bot():
         self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets, self.username)
         self.github = GitHub(secrets["GITHUB_TOKEN"], self.username)
 
-        self.slack = None
-        try:
-            self.slack_read_token = secrets["SLACK_READ_TOKEN"]
-            bot_token = secrets["SLACK_SEND_TOKEN"]
-            app_token = secrets["SLACK_APP_TOKEN"]
-            self.slack = Slack(bot_token, app_token, self.username)
-
-            self.dispatcher = CommandDispatcher(self.slack)
-            self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
-            # self.updater = UpdateChecker(self.github, self.slack, self.dispatcher)
-        except KeyError:
-            log.info("Skipping slack integration, secrets missing")
+        self.slack = Slack(
+                read_token=secrets.get("SLACK_READ_TOKEN"),
+                bot_token=secrets.get("SLACK_SEND_TOKEN"),
+                app_token=secrets.get("SLACK_APP_TOKEN"),
+                username=self.username,
+                interactive=interactive)
+        self.dispatcher = CommandDispatcher(self.slack)
+        self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
+        self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, self.username)
 
     def post(self, path, data, msg=None):
         if self.interactive:
