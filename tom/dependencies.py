@@ -178,10 +178,10 @@ class UpdateChecker():
         """
         log.info('Checking new version of {}'.format(dep))
         dist_file_path = 'deps-packaging/{}/distfiles'.format(dep)
-        source_file_path = 'deps-packaging/{}/source'.format(dep)
         dist_file = self.buildscripts.get_file(dist_file_path)
-        source_file = self.buildscripts.get_file(source_file_path)
         dist_file = dist_file.strip()
+        source_file_path = 'deps-packaging/{}/source'.format(dep)
+        source_file = self.buildscripts.get_file(source_file_path)
         source_file = source_file.strip()
         old_filename = re.sub('.* ', '', dist_file)
         old_url = '{}{}'.format(source_file, old_filename)
@@ -193,6 +193,7 @@ class UpdateChecker():
         if new_version == old_version:
             # no update needed
             return False
+        new_filename = old_filename.replace(old_version, new_version)
         new_url = old_url.replace(old_version, new_version)
         md5sum = self.checkfile(new_url, True)
         if not md5sum:
@@ -202,18 +203,16 @@ class UpdateChecker():
             return False
         message = 'Update {} from {} to {}'.format(dep, old_version, new_version)
         log.info(message)
-        new_filename = old_filename.replace(old_version, new_version)
         dist_file = '{}  {}'.format(md5sum, new_filename)
+        self.buildscripts.put_file(dist_file_path, dist_file+'\n')
         source_file = source_file.replace(old_version, new_version)
+        self.buildscripts.put_file(source_file_path, source_file+'\n')
         self.readme_lines = [
             self.maybe_replace(
                 x, '* [{}]('.format(dep.replace('-hub', '')), old_version, new_version)
             for x in self.readme_lines
         ]
         readme_file = '\n'.join(self.readme_lines)
-        self.buildscripts.put_file(dist_file_path, dist_file + '\n')
-        self.buildscripts.put_file(spec_file_path, spec_file + '\n')
-        self.buildscripts.put_file(source_file_path, source_file + '\n')
         self.buildscripts.put_file(self.readme_file_path, readme_file)
         spec_file_path = 'deps-packaging/{}/cfbuild-{}.spec'.format(dep, dep)
         try:
