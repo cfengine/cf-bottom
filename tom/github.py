@@ -1,6 +1,7 @@
 import random
 import requests
 import re
+import os
 import json
 import logging as log
 from copy import copy
@@ -196,7 +197,6 @@ class GitHubInterface():
         message = (
             'Looking for all forks of private repos from ' +
             'cfengine and mendersoftware orgs for {} user...').format(username)
-        log.info(message)
         self.slack.reply(message)
         user_repos = []
         log.info('getting org repos')
@@ -226,7 +226,6 @@ class GitHubInterface():
                 format(len(user_repo_names),
                     '\n'.join(sorted(user_repo_names)),
                     self.slack.my_username))
-        log.info(message)
         self.slack.reply(message, True)
 
     def get_user_repos(self, username):
@@ -328,7 +327,6 @@ class GitHubInterface():
             return
         message = 'Creating PR for {} user. Finding the last pushed-to repo...'\
                 .format(username)
-        log.info(message)
         self.slack.reply(message)
         repo = self.find_last_repo(username)
         if not repo:
@@ -336,7 +334,6 @@ class GitHubInterface():
         message = ("You last pushed to {} repo. "+
                 "Looking for the branch with most recent commit...").\
                 format(repo)
-        log.info(message)
         self.slack.reply(message)
         last_branch = self.find_last_branch_in_repo(username, repo)
         log.info('last branch: ' + last_branch)
@@ -348,7 +345,6 @@ class GitHubInterface():
         message = ("Found last branch: {}, corresponding parent branch: {} "+
                 "in parent repo: {}. {}")\
                 .format(last_branch, parent_branch, parent_repo, pr_text)
-        log.info(message)
         self.slack.reply(message, True)
 
 
