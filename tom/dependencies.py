@@ -194,6 +194,12 @@ class UpdateChecker():
             # no update needed
             return False
         new_url = old_url.replace(old_version, new_version)
+        md5sum = self.checkfile(new_url, True)
+        if not md5sum:
+            message = 'Update {} from {} to {} FAILED to download {}'.format(dep, old_version, new_version, new_url)
+            log.warn(message)
+            self.slack.reply(message)
+            return False
         message = 'Update {} from {} to {}'.format(dep, old_version, new_version)
         log.info(message)
         spec_file_path = 'deps-packaging/{}/cfbuild-{}.spec'.format(dep, dep)
