@@ -199,22 +199,17 @@ class Bot():
         log.info("Tom successful")
 
     def talk(self):
-        if not self.slack:
-            sys.exit("Cannot start talk mode, Slack credentials missing")
-
-        message = json.load(sys.stdin)
-
-        log.debug(pretty(message))
-        if 'token' not in message or message['token'] != self.slack_read_token:
-            log.warning('Unauthorized message - ignoring')
+        if not self.interactive:
+            self.slack.parse_stdin(self.dispatcher)
             return
-        if 'authed_users' in message and len(message['authed_users']) > 0:
-            self.slack.my_username = message['authed_users'][0]
-        message = message['event']
-        if not 'user' in message:
-            # not a user-generated message
-            # probably a bot-generated message
-            log.warning('Not a user message - ignoring')
-            return
-        self.slack.set_reply_to(message)
-        self.dispatcher.parse_text(message['text'])
+
+        print('Type Slack messages (do not prefix them with bot name)')
+        print('Type "help" for list of commands')
+        print('Type "quit" or "exit" when bored')
+        prompt = '<@{}> '.format(self.username)
+        self.slack.reply_to_user = 'con'
+        while True:
+            text = input(prompt)
+            if text.lower().strip() in ['quit', 'exit']:
+                return
+            self.dispatcher.parse_text(text)
