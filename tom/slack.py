@@ -10,6 +10,9 @@ class Slack():
     argument)
     """
 
+    reply_to_channel = None
+    reply_to_user = None
+
     def __init__(self, bot_token, app_token, username):
         self.bot_token = bot_token
         self.app_token = app_token
@@ -49,7 +52,9 @@ class Slack():
         """Replies to saved channel, optionally mentioning saved user"""
         if mention:
             text = '<@{}>: {}'.format(self.reply_to_user, text)
-        self.send_message(self.reply_to_channel, text)
+        if self.reply_to_channel is not None:
+            self.send_message(self.reply_to_channel, text)
+
 
 
 class CommandDispatcher():
