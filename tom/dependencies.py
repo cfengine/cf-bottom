@@ -23,13 +23,22 @@ class UpdateChecker():
         """
         # TODO: get value of $EMBEDDED_DB from file
         embedded_db = 'lmdb'
-        options_file = self.buildscripts.get_file('build-scripts/compile-options')
-        options_lines = options_file.split('\n')
-        filtered_lines = [x for x in options_lines if 'var_append DEPS' in x]
-        only_deps = [re.sub('.*DEPS "(.*)".*', "\\1", x) for x in filtered_lines]
-        # currently only_deps is list of space-separated deps,
-        # i.e. each list item can contain several items, like this:
-        # only_deps = ["lcov", "pthreads-w32 libgnurx"]
+        if branch == '3.7.x':
+            options_file = self.buildscripts.get_file('build-scripts/install-dependencies')
+        else:
+            options_file = self.buildscripts.get_file('build-scripts/compile-options')
+        options_lines = options_file.splitlines()
+        if branch == '3.7.x':
+            filtered_lines = (x for x in options_lines if re.match('\s*DEPS=".*\\$DEPS', x))
+            only_deps = (re.sub('\\$?DEPS', '', x) for x in filtered_lines)
+            only_deps = (re.sub('[=";]', '', x) for x in only_deps)
+            only_deps = (x.strip() for x in only_deps)
+        else:
+            filtered_lines = (x for x in options_lines if 'var_append DEPS' in x)
+            only_deps = (re.sub('.*DEPS "(.*)".*', "\\1", x) for x in filtered_lines)
+        # currently only_deps is generator of space-separated deps,
+        # i.e. each item can contain several items, like this:
+        # list(only_deps) = ["lcov", "pthreads-w32 libgnurx"]
         # to "flattern" it we first join using spaces and then split on spaces
         # in the middle we also do some clean-ups
         only_deps = ' '.join(only_deps)\
