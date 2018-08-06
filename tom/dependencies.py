@@ -87,7 +87,10 @@ class UpdateChecker():
                 log.debug('getting whole file')
                 m = hashlib.md5()
                 with urllib.request.urlopen(url) as f:
-                    m.update(f.read(4096))
+                    data = f.read(4096)
+                    while data:
+                        m.update(data)
+                        data = f.read(4096)
                 return m.hexdigest()
         except:
             return False
@@ -167,7 +170,6 @@ class UpdateChecker():
         spec_file = self.buildscripts.get_file(spec_file_path)
         spec_file = spec_file.replace(old_version, new_version)
         new_filename = old_filename.replace(old_version, new_version)
-        md5sum = self.checkfile(new_url, True)
         dist_file = '{}  {}'.format(md5sum, new_filename)
         source_file = source_file.replace(old_version, new_version)
         self.readme_lines = [
