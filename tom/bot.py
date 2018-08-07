@@ -209,7 +209,11 @@ class Bot():
         prompt = '<@{}> '.format(self.username)
         self.slack.reply_to_user = 'con'
         while True:
-            text = input(prompt)
+            try:
+                text = input(prompt)
+            except EOFError:
+                # Ctrl-D was pressed
+                return
             if text.lower().strip() in ['quit', 'exit']:
                 return
             self.dispatcher.parse_text(text)
