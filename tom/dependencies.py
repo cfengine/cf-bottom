@@ -1,8 +1,12 @@
 import re
+import json
 import requests
 import datetime
 import hashlib
 import urllib.request
+import logging as log
+from tom.git import GitRepo
+from tom.utils import pretty
 
 class DependencyException(Exception):
     """Base class for all exceptions in this file"""
@@ -229,10 +233,10 @@ class UpdateChecker():
         """Run the dependency update for a branch, creating PR in the end"""
         self.slack.reply("Running dependency updates for " + branch)
         # prepare repo
-        local_path = "../buildscripts"
-        ssh_target = "git@github.com:cfengine/buildscripts.git"
-        self.buildscripts = GitRepo(local_path, ssh_target, self.username)
-        self.buildscripts.checkout(branch)
+        repo_name = 'buildscripts'
+        upstream_name = 'cfengine'
+        local_path = "../"+repo_name
+        self.buildscripts = GitRepo(local_path, repo_name, upstream_name, self.username, branch)
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = '{}-deps-{}'.format(branch, timestamp)
         self.buildscripts.checkout(new_branchname, True)
@@ -253,8 +257,11 @@ class UpdateChecker():
             return
         self.buildscripts.push(new_branchname)
         updates_summary = '\n'.join(updates_summary)
-        # TODO: switch to cfengine/buildscripts eventually
         pr_text = self.github.create_pr(
-            'Lex-2008/buildscripts', branch, 'Lex-2008', new_branchname,
-            'Dependency updates for ' + branch, updates_summary)
-        slack.reply("Dependency updates:\n```\n{}\n```\n{}".format(updates_summary, pr_text), True)
+            '{}/{}'.format(upstream_name, repo_name),
+            branch,
+            self.username,
+            new_branchname,
+            'Dependency updates for ' + branch,
+            updates_summary)
+        self.slack.reply("Dependency updates:\n```\n{}\n```\n{}".format(updates_summary, pr_text), True)
