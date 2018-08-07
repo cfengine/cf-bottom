@@ -8,6 +8,7 @@ from tom.github import GitHub, GitHubInterface, PR
 from tom.jenkins import Jenkins
 from tom.slack import Slack, CommandDispatcher
 from tom.dependencies import UpdateChecker
+from tom.changelog import ChangelogGenerator
 from tom.utils import confirmation, pretty
 
 
@@ -34,7 +35,8 @@ class Bot():
                 interactive=interactive)
         self.dispatcher = CommandDispatcher(self.slack)
         self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
-        self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, self.username)
+        self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
+        self.changelogger = ChangelogGenerator(self.github, self.slack, self.dispatcher, 'Lex-2008')
 
     def post(self, path, data, msg=None):
         if self.interactive:
