@@ -26,8 +26,11 @@ class UpdateChecker():
         self.slack = slack
         self.username = username
         dispatcher.register_command(
-            'deps', lambda branch: self.run(branch), 'branch', 'Run dependency updates',
-            'Try to find new versions of dependencies on given branch ' + 'and create PR with them')
+                keyword='deps',
+                callback=lambda branch: self.run(branch),
+                parameter_name='branch',
+                short_help='Run dependency updates',
+                long_help='Try to find new versions of dependencies on given branch and create PR with them')
 
     def get_deps_list(self, branch='master'):
         """Get list of dependencies for given branch.
@@ -208,9 +211,9 @@ class UpdateChecker():
         message = 'Update {} from {} to {}'.format(dep, old_version, new_version)
         log.info(message)
         dist_file = '{}  {}'.format(md5sum, new_filename)
-        self.buildscripts.put_file(dist_file_path, dist_file+'\n')
+        self.buildscripts.put_file(dist_file_path, dist_file + '\n')
         source_file = source_file.replace(old_version, new_version)
-        self.buildscripts.put_file(source_file_path, source_file+'\n')
+        self.buildscripts.put_file(source_file_path, source_file + '\n')
         self.readme_lines = [
             self.maybe_replace(
                 x, '* [{}]('.format(dep.replace('-hub', '')), old_version, new_version)
@@ -225,7 +228,7 @@ class UpdateChecker():
             pass
         else:
             spec_file = spec_file.replace(old_version, new_version)
-            self.buildscripts.put_file(spec_file_path, spec_file+'\n')
+            self.buildscripts.put_file(spec_file_path, spec_file + '\n')
         self.buildscripts.commit(message)
         return message
 
@@ -235,7 +238,7 @@ class UpdateChecker():
         # prepare repo
         repo_name = 'buildscripts'
         upstream_name = 'cfengine'
-        local_path = "../"+repo_name
+        local_path = "../" + repo_name
         self.buildscripts = GitRepo(local_path, repo_name, upstream_name, self.username, branch)
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = '{}-deps-{}'.format(branch, timestamp)
@@ -258,10 +261,10 @@ class UpdateChecker():
         self.buildscripts.push(new_branchname)
         updates_summary = '\n'.join(updates_summary)
         pr_text = self.github.create_pr(
-            '{}/{}'.format(upstream_name, repo_name),
-            branch,
-            self.username,
-            new_branchname,
-            'Dependency updates for ' + branch,
-            updates_summary)
+            target_repo='{}/{}'.format(upstream_name, repo_name),
+            target_branch=branch,
+            source_user=self.username,
+            source_branch=new_branchname,
+            title='Dependency updates for ' + branch,
+            text=updates_summary)
         self.slack.reply("Dependency updates:\n```\n{}\n```\n{}".format(updates_summary, pr_text), True)

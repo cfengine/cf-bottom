@@ -4,7 +4,6 @@ import re
 import os
 import json
 import logging as log
-from copy import copy
 import requests
 
 from tom.utils import pretty

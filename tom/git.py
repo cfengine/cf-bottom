@@ -70,7 +70,7 @@ class GitRepo():
             self.run_command('checkout', '-b', branch)
         else:
             self.run_command('checkout', branch)
-            self.run_command('reset', '--hard', 'origin/'+branch)
+            self.run_command('reset', '--hard', 'origin/' + branch)
 
     def get_file(self, path):
         """Returns contents of a file as a single string"""
