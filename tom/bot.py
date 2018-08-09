@@ -34,9 +34,12 @@ class Bot():
                 username=self.username,
                 interactive=interactive)
         self.dispatcher = CommandDispatcher(self.slack)
-        self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
-        self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
-        self.changelogger = ChangelogGenerator(self.github, self.slack, self.dispatcher, 'Lex-2008')
+        if 'create_pr_magic' in config["bot_features"]:
+            self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
+        if 'update_dependencies' in config["bot_features"]:
+            self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
+        if 'generate_changelogs' in config["bot_features"]:
+            self.changelogger = ChangelogGenerator(self.github, self.slack, self.dispatcher, 'Lex-2008')
 
     def post(self, path, data, msg=None):
         if self.interactive:

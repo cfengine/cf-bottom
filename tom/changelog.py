@@ -18,7 +18,10 @@ class ChangelogParsingException(ChangelogException):
 
 
 class ChangelogGenerator():
-    """Class responsible for generating changelogs"""
+    """Class responsible for generating changelogs.
+    Currently it generates changelog only for CFEngine, as described at
+    https://github.com/mendersoftware/infra/blob/master/files/buildcache/release-scripts/RELEASE_PROCESS.org#generate-changelogs
+    """
 
     repos_root = '..'
     changelog_filenames={

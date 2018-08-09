@@ -19,7 +19,10 @@ class ReleaseMonitoringException(DependencyException):
 
 
 class UpdateChecker():
-    """Class responsible for doing dependency updates"""
+    """Class responsible for doing dependency updates
+    Currently it's working only with cfengine/buildscripts repo, as described at
+    https://github.com/mendersoftware/infra/blob/master/files/buildcache/release-scripts/RELEASE_PROCESS.org#minor-dependencies-update
+    """
 
     def __init__(self, github, slack, dispatcher, username):
         self.github = github
