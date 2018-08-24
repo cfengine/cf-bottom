@@ -1,6 +1,9 @@
 import traceback
 import re
+import sys
+import json
 import requests
+import logging as log
 
 
 class Slack():
@@ -10,10 +13,15 @@ class Slack():
     argument)
     """
 
-    def __init__(self, bot_token, app_token, username):
+    reply_to_channel = None
+    reply_to_user = None
+
+    def __init__(self, read_token, bot_token, app_token, username, interactive):
+        self.read_token = read_token
         self.bot_token = bot_token
         self.app_token = app_token
         self.my_username = username
+        self.interactive = interactive
 
     def api(self, name):
         return 'https://slack.com/api/' + name
@@ -38,18 +46,46 @@ class Slack():
             return
         self.post('chat.postMessage', data={"channel": channel, "text": text})
 
-    def set_reply_to(self, message):
-        """Saves parameters of original message (channel and username) for
-        easy _reply_ function
-        """
-        self.reply_to_channel = message['channel']
-        self.reply_to_user = message['user']
-
     def reply(self, text, mention=False):
         """Replies to saved channel, optionally mentioning saved user"""
         if mention:
             text = '<@{}>: {}'.format(self.reply_to_user, text)
-        self.send_message(self.reply_to_channel, text)
+        if log.getLogger().getEffectiveLevel() >= log.INFO:
+            log.info('SLACK: {}'.format(text))
+        elif self.interactive:
+            print(text)
+        if self.reply_to_channel is not None:
+            self.send_message(self.reply_to_channel, text)
+
+    def parse_stdin(self, dispatcher):
+        """Reads raw message (in JSON format, as received from Slack servers)
+        from stdin, checks it, and calls dispatcher.parse with message text
+        """
+
+        message = json.load(sys.stdin)
+
+        log.debug(pretty(message))
+        if self.read_token == None:
+            log.warning('no read token provided - bluntly trusting incoming message')
+        else:
+            if 'token' not in message or message['token'] != self.read_token:
+                log.warning('Unauthorized message - ignoring')
+                return
+        if 'authed_users' in message and len(message['authed_users']) > 0:
+            self.my_username = message['authed_users'][0]
+        message = message['event']
+        if not 'user' in message:
+            # not a user-generated message
+            # probably a bot-generated message
+            # TODO: maybe check only for self.my_username here - to allow bots
+            # talk to each other?
+            log.warning('Not a user message - ignoring')
+            return
+        self.reply_to_channel = message['channel']
+        self.reply_to_user = message['user']
+        # remove bot username from string
+        text = re.sub('<@{}> *:? *'.format(self.my_username), '', message['text'])
+        dispatcher.parse_text(text)
 
 
 class CommandDispatcher():
@@ -90,8 +126,6 @@ class CommandDispatcher():
 
     def parse_text(self, text):
         """Analyze user message and react on it - call a registered command"""
-        # remove bot username from string
-        text = re.sub('<@{}> *:? *'.format(self.slack.my_username), '', text)
         m = re.match(' *([^:]*)(?:[:] *([^ ]*))?', text)
         keyword = m.group(1)
         argument = m.group(2)

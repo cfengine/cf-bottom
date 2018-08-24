@@ -6,7 +6,9 @@ from copy import copy
 
 from tom.github import GitHub, GitHubInterface, PR
 from tom.jenkins import Jenkins
-from tom.slack import CommandDispatcher
+from tom.slack import Slack, CommandDispatcher
+from tom.dependencies import UpdateChecker
+from tom.changelog import ChangelogGenerator
 from tom.utils import confirmation, pretty
 
 
@@ -25,18 +27,19 @@ class Bot():
         self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets, self.username)
         self.github = GitHub(secrets["GITHUB_TOKEN"], self.username)
 
-        self.slack = None
-        try:
-            self.slack_read_token = secrets["SLACK_READ_TOKEN"]
-            bot_token = secrets["SLACK_SEND_TOKEN"]
-            app_token = secrets["SLACK_APP_TOKEN"]
-            self.slack = Slack(bot_token, app_token, self.username)
-
-            self.dispatcher = CommandDispatcher(self.slack)
+        self.slack = Slack(
+                read_token=secrets.get("SLACK_READ_TOKEN"),
+                bot_token=secrets.get("SLACK_SEND_TOKEN"),
+                app_token=secrets.get("SLACK_APP_TOKEN"),
+                username=self.username,
+                interactive=interactive)
+        self.dispatcher = CommandDispatcher(self.slack)
+        if 'create_pr_magic' in config["bot_features"]:
             self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
-            # self.updater = UpdateChecker(self.github, self.slack, self.dispatcher)
-        except KeyError:
-            log.info("Skipping slack integration, secrets missing")
+        if 'update_dependencies' in config["bot_features"]:
+            self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
+        if 'generate_changelogs' in config["bot_features"]:
+            self.changelogger = ChangelogGenerator(self.github, self.slack, self.dispatcher, 'Lex-2008')
 
     def post(self, path, data, msg=None):
         if self.interactive:
@@ -199,22 +202,21 @@ class Bot():
         log.info("Tom successful")
 
     def talk(self):
-        if not self.slack:
-            sys.exit("Cannot start talk mode, Slack credentials missing")
-
-        message = json.load(sys.stdin)
-
-        log.debug(pretty(message))
-        if 'token' not in message or message['token'] != self.slack_read_token:
-            log.warning('Unauthorized message - ignoring')
+        if not self.interactive:
+            self.slack.parse_stdin(self.dispatcher)
             return
-        if 'authed_users' in message and len(message['authed_users']) > 0:
-            self.slack.my_username = message['authed_users'][0]
-        message = message['event']
-        if not 'user' in message:
-            # not a user-generated message
-            # probably a bot-generated message
-            log.warning('Not a user message - ignoring')
-            return
-        self.slack.set_reply_to(message)
-        self.dispatcher.parse_text(message['text'])
+
+        print('Type Slack messages (do not prefix them with bot name)')
+        print('Type "help" for list of commands')
+        print('Type "quit" or "exit" when bored')
+        prompt = '<@{}> '.format(self.username)
+        self.slack.reply_to_user = 'con'
+        while True:
+            try:
+                text = input(prompt)
+            except EOFError:
+                # Ctrl-D was pressed
+                return
+            if text.lower().strip() in ['quit', 'exit']:
+                return
+            self.dispatcher.parse_text(text)

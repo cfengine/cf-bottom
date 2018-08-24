@@ -1,21 +1,41 @@
+import os
+import logging as log
 import subprocess
 
 
 class GitRepo():
     """Class responsible for working with locally checked-out repository"""
 
-    def __init__(self, dirname, url, username):
+    def __init__(self, dirname, repo_name, upstream_name, my_name, checkout_branch=None):
+        """Clones a remore repo to a directory (or freshens it if it's already
+        checked out), configures it and optionally checks out a requested branch
+        Args:
+            dirname - name of directory in local filesystem where to clone the repo
+            repo_name - name of repository (like 'core' or 'masterfiles')
+            upstream_name - name of original owner of the repo (usually 'cfengine')
+                We will pull from git@github.com:/upstream_name/repo_name
+            my_name - name of github user where we will push and create PR from
+                (usually 'cf-bottom')
+                We will push to git@github.com:/my_name/repo_name
+            checkout_branch - optional name of branch to checkout. If not provided,
+                a branch from previous work might be left checked out
+        """
         self.dirname = dirname
-        self.url = url
-        self.username = username
-        self.usermail = username + '@cfengine.com'
+        self.repo_name = repo_name
+        self.username = my_name
+        self.usermail = my_name + '@cfengine.com'
+
+        fetch_url = 'git@github.com:{}/{}.git'.format(upstream_name,repo_name)
+        push_url = 'git@github.com:{}/{}.git'.format(my_name,repo_name)
 
         if os.path.exists(dirname):
-            # assume it's configured properly
+            self.run_command('remote', 'set-url', 'origin', fetch_url)
             self.run_command('fetch')
         else:
-            # TODO: configure it properly:
-            self.run_command('clone', '--no-checkout', url, dirname)
+            self.run_command('clone', '--no-checkout', fetch_url, dirname)
+        self.run_command('remote', 'set-url', '--push', 'origin', push_url)
+        if checkout_branch is not None:
+            self.checkout(checkout_branch)
 
     def run_command(self, *command, **kwargs):
         """Runs a git command against git repo.
@@ -50,6 +70,7 @@ class GitRepo():
             self.run_command('checkout', '-b', branch)
         else:
             self.run_command('checkout', branch)
+            self.run_command('reset', '--hard', 'origin/' + branch)
 
     def get_file(self, path):
         """Returns contents of a file as a single string"""
@@ -68,7 +89,8 @@ class GitRepo():
         self.run_command('commit', '-m', message, '--allow-empty')
 
     def push(self, branch_name):
-        """Pushes local branch to remote repo"""
+        """Pushes local branch to remote repo, optionally also setting upstream
+        """
         if branch_name:
             self.run_command('push', '--set-upstream', 'origin', branch_name)
         else:

@@ -7,6 +7,7 @@
       "reviewers": ["olehermanse", "vpodzime"],
       "jenkins": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
+      "bot_features": ["create_pr_magic", "update_dependencies", "generate_changelogs"],
       "orgs": ["cfengine"],
       "repos": {
         "cfengine/core": ["olehermanse", "vpodzime"],
@@ -26,6 +27,7 @@
       "reviewers": ["oleorhagen", "kacf"],
       "jenkins": "https://mender-jenkins.mender.io/",
       "jenkins_job": "mender-builder",
+      "bot_features": ["create_pr_magic"],
       "orgs": [],
       "repos": {
         "mendersoftware/mender": ["kacf", "oleorhagen", "pasinskim"],

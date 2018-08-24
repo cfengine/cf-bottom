@@ -1,20 +1,39 @@
 import re
+import json
 import requests
 import datetime
 import hashlib
 import urllib.request
+import logging as log
+from tom.git import GitRepo
+from tom.utils import pretty
+
+class DependencyException(Exception):
+    """Base class for all exceptions in this file"""
+    pass
+
+class ReleaseMonitoringException(DependencyException):
+    """Exception that is risen if release-monitoring.org behaves unexpectedly"""
+    pass
+
 
 
 class UpdateChecker():
-    """Class responsible for doing dependency updates"""
+    """Class responsible for doing dependency updates
+    Currently it's working only with cfengine/buildscripts repo, as described at
+    https://github.com/mendersoftware/infra/blob/master/files/buildcache/release-scripts/RELEASE_PROCESS.org#minor-dependencies-update
+    """
 
     def __init__(self, github, slack, dispatcher, username):
         self.github = github
         self.slack = slack
         self.username = username
         dispatcher.register_command(
-            'deps', lambda branch: self.run(branch), 'branch', 'Run dependency updates',
-            'Try to find new versions of dependencies on given branch ' + 'and create PR with them')
+                keyword='deps',
+                callback=lambda branch: self.run(branch),
+                parameter_name='branch',
+                short_help='Run dependency updates',
+                long_help='Try to find new versions of dependencies on given branch and create PR with them')
 
     def get_deps_list(self, branch='master'):
         """Get list of dependencies for given branch.
@@ -23,13 +42,22 @@ class UpdateChecker():
         """
         # TODO: get value of $EMBEDDED_DB from file
         embedded_db = 'lmdb'
-        options_file = self.buildscripts.get_file('build-scripts/compile-options')
-        options_lines = options_file.split('\n')
-        filtered_lines = [x for x in options_lines if 'var_append DEPS' in x]
-        only_deps = [re.sub('.*DEPS "(.*)".*', "\\1", x) for x in filtered_lines]
-        # currently only_deps is list of space-separated deps,
-        # i.e. each list item can contain several items, like this:
-        # only_deps = ["lcov", "pthreads-w32 libgnurx"]
+        if branch == '3.7.x':
+            options_file = self.buildscripts.get_file('build-scripts/install-dependencies')
+        else:
+            options_file = self.buildscripts.get_file('build-scripts/compile-options')
+        options_lines = options_file.splitlines()
+        if branch == '3.7.x':
+            filtered_lines = (x for x in options_lines if re.match('\s*DEPS=".*\\$DEPS', x))
+            only_deps = (re.sub('\\$?DEPS', '', x) for x in filtered_lines)
+            only_deps = (re.sub('[=";]', '', x) for x in only_deps)
+            only_deps = (x.strip() for x in only_deps)
+        else:
+            filtered_lines = (x for x in options_lines if 'var_append DEPS' in x)
+            only_deps = (re.sub('.*DEPS "(.*)".*', "\\1", x) for x in filtered_lines)
+        # currently only_deps is generator of space-separated deps,
+        # i.e. each item can contain several items, like this:
+        # list(only_deps) = ["lcov", "pthreads-w32 libgnurx"]
         # to "flattern" it we first join using spaces and then split on spaces
         # in the middle we also do some clean-ups
         only_deps = ' '.join(only_deps)\
@@ -78,7 +106,10 @@ class UpdateChecker():
                 log.debug('getting whole file')
                 m = hashlib.md5()
                 with urllib.request.urlopen(url) as f:
-                    m.update(f.read(4096))
+                    data = f.read(4096)
+                    while data:
+                        m.update(data)
+                        data = f.read(4096)
                 return m.hexdigest()
         except:
             return False
@@ -104,7 +135,7 @@ class UpdateChecker():
             version = re.search('w32-([0-9-]*)-rel', filename).group(1)
             separator = '-'
         else:
-            version = re.search('[-_]([0-9.]*)\.', filename).group(1)
+            version = re.search('[-_]([0-9.]*)[\.-]',filename).group(1)
             separator = '.'
         return (version, separator)
 
@@ -133,44 +164,74 @@ class UpdateChecker():
             return old_version
         return self.increase_version(old_version, increment, separator)
 
+    def get_version_from_monitoring(self, dep):
+        """Gets latest version of a dependency from release-monitoring.org site.
+        Returns latest version (string), or False if dependency not found in
+        release-monitoring.json file.
+        """
+        if dep not in self.monitoring_ids:
+            return False
+        id = self.monitoring_ids[dep]
+        url = 'https://release-monitoring.org/api/project/{}'.format(id)
+        try:
+            data = requests.get(url).json()
+        except:
+            raise ReleaseMonitoringException('Failed to do a request to release-monitoring.org website')
+        try:
+            return data['version']
+        except:
+            raise ReleaseMonitoringException('Failed to get version from data received from release-monitoring.org website')
+
     def update_single_dep(self, dep):
         """Check if new version of dependency dep was released and create
         commit updating it in *.spec, dist, source, and README.md files
         """
         log.info('Checking new version of {}'.format(dep))
         dist_file_path = 'deps-packaging/{}/distfiles'.format(dep)
-        source_file_path = 'deps-packaging/{}/source'.format(dep)
         dist_file = self.buildscripts.get_file(dist_file_path)
-        source_file = self.buildscripts.get_file(source_file_path)
         dist_file = dist_file.strip()
+        source_file_path = 'deps-packaging/{}/source'.format(dep)
+        source_file = self.buildscripts.get_file(source_file_path)
         source_file = source_file.strip()
         old_filename = re.sub('.* ', '', dist_file)
         old_url = '{}{}'.format(source_file, old_filename)
         (old_version, separator) = self.extract_version_from_filename(dep, old_filename)
-        new_version = self.find_new_version(old_url, old_version, separator)
+        new_version = self.get_version_from_monitoring(dep)
+        if not new_version:
+            log.warning('Dependency {} not found in release-monitoring.org or in data file'.format(dep))
+            new_version = self.find_new_version(old_url, old_version, separator)
         if new_version == old_version:
             # no update needed
             return False
+        new_filename = old_filename.replace(old_version, new_version)
         new_url = old_url.replace(old_version, new_version)
+        md5sum = self.checkfile(new_url, True)
+        if not md5sum:
+            message = 'Update {} from {} to {} FAILED to download {}'.format(dep, old_version, new_version, new_url)
+            log.warn(message)
+            self.slack.reply(message)
+            return False
         message = 'Update {} from {} to {}'.format(dep, old_version, new_version)
         log.info(message)
-        spec_file_path = 'deps-packaging/{}/cfbuild-{}.spec'.format(dep, dep)
-        spec_file = self.buildscripts.get_file(spec_file_path)
-        spec_file = spec_file.replace(old_version, new_version)
-        new_filename = old_filename.replace(old_version, new_version)
-        md5sum = self.checkfile(new_url, True)
         dist_file = '{}  {}'.format(md5sum, new_filename)
+        self.buildscripts.put_file(dist_file_path, dist_file + '\n')
         source_file = source_file.replace(old_version, new_version)
+        self.buildscripts.put_file(source_file_path, source_file + '\n')
         self.readme_lines = [
             self.maybe_replace(
                 x, '* [{}]('.format(dep.replace('-hub', '')), old_version, new_version)
             for x in self.readme_lines
         ]
         readme_file = '\n'.join(self.readme_lines)
-        self.buildscripts.put_file(dist_file_path, dist_file + '\n')
-        self.buildscripts.put_file(spec_file_path, spec_file + '\n')
-        self.buildscripts.put_file(source_file_path, source_file + '\n')
         self.buildscripts.put_file(self.readme_file_path, readme_file)
+        spec_file_path = 'deps-packaging/{}/cfbuild-{}.spec'.format(dep, dep)
+        try:
+            spec_file = self.buildscripts.get_file(spec_file_path)
+        except:
+            pass
+        else:
+            spec_file = spec_file.replace(old_version, new_version)
+            self.buildscripts.put_file(spec_file_path, spec_file + '\n')
         self.buildscripts.commit(message)
         return message
 
@@ -178,16 +239,18 @@ class UpdateChecker():
         """Run the dependency update for a branch, creating PR in the end"""
         self.slack.reply("Running dependency updates for " + branch)
         # prepare repo
-        local_path = "../buildscripts"
-        ssh_target = "git@github.com:cfengine/buildscripts.git"
-        self.buildscripts = GitRepo(local_path, ssh_target, self.username)
-        self.buildscripts.checkout(branch)
+        repo_name = 'buildscripts'
+        upstream_name = 'cfengine'
+        local_path = "../" + repo_name
+        self.buildscripts = GitRepo(local_path, repo_name, upstream_name, self.username, branch)
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = '{}-deps-{}'.format(branch, timestamp)
         self.buildscripts.checkout(new_branchname, True)
         self.readme_file_path = 'deps-packaging/README.md'
         readme_file = self.buildscripts.get_file(self.readme_file_path)
         self.readme_lines = readme_file.split('\n')
+        self.monitoring_file_path = 'deps-packaging/release-monitoring.json'
+        self.monitoring_ids = json.loads(self.buildscripts.get_file(self.monitoring_file_path))
         updates_summary = []
         only_deps = self.get_deps_list(branch)
         for dep in only_deps:
@@ -200,8 +263,11 @@ class UpdateChecker():
             return
         self.buildscripts.push(new_branchname)
         updates_summary = '\n'.join(updates_summary)
-        # TODO: switch to cfengine/buildscripts eventually
         pr_text = self.github.create_pr(
-            'Lex-2008/buildscripts', branch, 'Lex-2008', new_branchname,
-            'Dependency updates for ' + branch, updates_summary)
-        slack.reply("Dependency updates:\n```\n{}\n```\n{}".format(updates_summary, pr_text), True)
+            target_repo='{}/{}'.format(upstream_name, repo_name),
+            target_branch=branch,
+            source_user=self.username,
+            source_branch=new_branchname,
+            title='Dependency updates for ' + branch,
+            text=updates_summary)
+        self.slack.reply("Dependency updates:\n```\n{}\n```\n{}".format(updates_summary, pr_text), True)

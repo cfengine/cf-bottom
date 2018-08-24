@@ -12,12 +12,12 @@ def setup_bot(directory, interactive, data):
     return Bot(data, secrets, directory, interactive)
 
 
-def run_talk(directory, user):
+def run_talk(directory, user, interactive):
     config = load_config(directory)
     assert len(config["bots"]) > 0
     for bot_data in config["bots"]:
         if bot_data["username"] == user:
-            bot = setup_bot(directory, False, bot_data)
+            bot = setup_bot(directory, interactive, bot_data)
             bot.talk()
             return
     user_error("Couldn't find config for bot '{}'".format(user))
@@ -69,7 +69,9 @@ def run_all(directory, interactive):
 def get_args():
     argparser = argparse.ArgumentParser(description='CFEngine Bot, Tom')
     argparser.add_argument(
-        '--interactive', '-i', help='Ask first, shoot questions later', action="store_true")
+            '--interactive', '-i', help=('Assume user present at terminal: '+
+                'in normal mode ask first, shoot questions later; '+
+                'in talk mode - talk to the user, not to the server'), action="store_true")
     argparser.add_argument(
         '--directory',
         '-d',
@@ -83,9 +85,6 @@ def get_args():
         type=str)
     argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
     args = argparser.parse_args()
-
-    if args.talk_user and args.interactive:
-        user_error("Talk mode doesn't support interactive")
 
     return args
 
@@ -103,7 +102,7 @@ def main():
     log.getLogger("requests").setLevel(log.WARNING)
     log.getLogger("urllib3").setLevel(log.WARNING)
     if args.talk_user:
-        run_talk(args.directory, args.talk_user)
+        run_talk(args.directory, args.talk_user, args.interactive)
     else:
         run_all(args.directory, args.interactive)
 
