@@ -94,14 +94,17 @@ class Bot():
                 self.post(pr.reviews_url, data)
                 print("Approved PR: {}".format(pr.title))
 
-    def comment_badge(self, pr, num, url):
+    def comment_badge(self, pr, num, url, badge_text):
         badge_icon = "{url}/buildStatus/icon?job={job}&build={num}".format(
             url=self.jenkins.url, job=self.jenkins.job_name, num=num)
         badge_link = "{url}/job/{job}/{num}/".format(
             url=self.jenkins.url, job=self.jenkins.job_name, num=num)
         badge = "[![Build Status]({})]({})".format(badge_icon, badge_link)
         response = random.choice(["Alright", "Sure"])
-        new_comment = "{}, I triggered a build:\n\n{}\n\n{}".format(response, badge, url)
+        if badge_text:
+            badge_text = "\n\n" + badge_text  # Under looks better
+        new_comment = "{}, I triggered a build:\n\n{}{}\n\n{}".format(
+            response, badge, badge_text, url)
         self.comment(pr, new_comment)
 
     def trigger_build(self, pr, comment):
@@ -109,23 +112,30 @@ class Bot():
         prs[pr.short_repo_name] = pr.number
         #TODO: allow pr numbers in comments
 
+        description = ""
+        exotics = False
+        if "exotic" in comment:
+            exotics = True
+            description = "(with exotics)"
+
         if self.interactive:
             msg = []
             msg.append(str(comment))
             msg.append("Triger build for: {}".format(pr.title))
             msg.append("PRs: {}".format(prs))
+            msg.append("EXOTICS: {}".format(exotics))
             msg = "\n".join(msg)
             if not confirmation(msg):
                 return
 
-        headers, body = self.jenkins.trigger(prs, branch=pr.base_branch, title=pr.title)
+        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics)
 
         queue_url = headers["Location"]
 
         num, url = self.jenkins.wait_for_queue(queue_url)
 
         print("Triggered build ({}): {}".format(num, url))
-        self.comment_badge(pr, num, url)
+        self.comment_badge(pr, num, url, description)
 
     def handle_mention(self, pr, comment):
         deny = "@{} : I'm sorry, I cannot do that. @olehermanse please help.".format(comment.author)
