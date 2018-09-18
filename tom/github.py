@@ -5,15 +5,17 @@ import os
 import json
 import logging as log
 import requests
+from copy import copy
 
 from tom.utils import pretty
 
 
 class GitHub():
-    def __init__(self, token, user_agent):
+    def __init__(self, token, user_agent, known_repos):
         self.token = token
         self.headers = {"Authorization": "token {}".format(token), "User-Agent": user_agent}
         self.get_cache = {}
+        self.known_repos = known_repos
 
     def path(self, path):
         if path.startswith("/"):
@@ -401,6 +403,36 @@ class PR():
             self.labels = [label["name"].lower() for label in data["labels"]]
 
         self.comments = Comments(self.github.get(self.comments_url), github)
+        self.body = data["body"].lower()
+        self.merge_with = {}
+        for word in self.body.split():
+            for repo in github.known_repos:
+                if "#" not in word and "/" not in word:
+                    continue
+                if repo not in word:
+                    continue
+
+                # If a "word" contains # or / and a repo name,
+                # assume it's a PR link:
+                pr_link = word
+                if pr_link.endswith("/"):  # Trailing HTTPS path /
+                    pr_link = pr_link[:-1]
+
+                if "#" in pr_link:  # Github #1234 PR syntax
+                    repo_pr = pr_link[pr_link.rindex("#") + 1:]
+                elif "/" in pr_link:
+                    repo_pr = pr_link[pr_link.rindex("/") + 1:]
+                else:
+                    continue
+
+                if "/" in repo_pr:
+                    continue  # Wrong format
+                try:
+                    repo_pr = int(repo_pr)
+                except ValueError:
+                    continue
+                log.info("Found related PR in {}: #{}".format(repo, repo_pr))
+                self.merge_with[repo] = repo_pr
 
         self.reviews = self.github.get(self.reviews_url)
         self.approvals = []

@@ -37,10 +37,12 @@ class Jenkins():
         except:
             return r.headers, r.text
 
-    def trigger(self, prs=None, branch="master", title=None, exotics=False):
+    def trigger(self, prs=None, branch="master", title=None, exotics=False, user=None):
         path = self.trigger_url
         params = {}
-        repo_names = ",".join([k.lower() for k in prs])
+        branches = ["{}#{}".format(r, p) for r, p in prs.items()]
+        branches.append(branch)
+        branches = " ".join(branches)
         if prs:
             for repo in prs:
                 param_name = repo.upper().replace("-", "_")
@@ -48,12 +50,14 @@ class Jenkins():
                 param_name = param_name + "_REV"
                 params[param_name] = str(prs[repo])
         params["BASE_BRANCH"] = str(branch)
+        if not user:
+            user = self.username
         if exotics:
             params["RUN_ON_EXOTICS"] = True
         if title is not None:
-            description = "{} ({} {}@{})".format(title, self.username, repo_names, branch)
+            description = "{} @{} ({})".format(title, user, branches)
         else:
-            description = "Unnamed build ({})".format(self.username)
+            description = "Unnamed build ({})".format(user)
         if exotics:
             description += " - WITH EXOTICS"
         params["BUILD_DESC"] = description
