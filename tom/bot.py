@@ -23,23 +23,25 @@ class Bot():
         self.repo_maintainers = config["repos"]
         self.default_maintainers = config["reviewers"]
         self.trusted = config["trusted"]
+        self.jenkins_repos = config["jenkins_repos"]
 
         self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets, self.username)
-        self.github = GitHub(secrets["GITHUB_TOKEN"], self.username)
+        self.github = GitHub(secrets["GITHUB_TOKEN"], self.username, self.jenkins_repos)
 
         self.slack = Slack(
-                read_token=secrets.get("SLACK_READ_TOKEN"),
-                bot_token=secrets.get("SLACK_SEND_TOKEN"),
-                app_token=secrets.get("SLACK_APP_TOKEN"),
-                username=self.username,
-                interactive=interactive)
+            read_token=secrets.get("SLACK_READ_TOKEN"),
+            bot_token=secrets.get("SLACK_SEND_TOKEN"),
+            app_token=secrets.get("SLACK_APP_TOKEN"),
+            username=self.username,
+            interactive=interactive)
         self.dispatcher = CommandDispatcher(self.slack)
         if 'create_pr_magic' in config["bot_features"]:
             self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
         if 'update_dependencies' in config["bot_features"]:
             self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
         if 'generate_changelogs' in config["bot_features"]:
-            self.changelogger = ChangelogGenerator(self.github, self.slack, self.dispatcher, 'Lex-2008')
+            self.changelogger = ChangelogGenerator(
+                self.github, self.slack, self.dispatcher, 'Lex-2008')
 
     def post(self, path, data, msg=None):
         if self.interactive:
@@ -110,8 +112,9 @@ class Bot():
     def trigger_build(self, pr, comment):
         prs = {}
         prs[pr.short_repo_name] = pr.number
-        #TODO: allow pr numbers in comments
-
+        for repo_name in pr.merge_with:
+            if repo_name not in prs:
+                prs[repo_name] = pr.merge_with[repo_name]
         description = ""
         exotics = False
         if "exotic" in comment:
@@ -128,7 +131,7 @@ class Bot():
             if not confirmation(msg):
                 return
 
-        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics)
+        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author)
 
         queue_url = headers["Location"]
 

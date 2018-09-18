@@ -9,6 +9,7 @@
       "jenkins_job": "pr-pipeline",
       "bot_features": ["create_pr_magic", "update_dependencies", "generate_changelogs"],
       "orgs": ["cfengine"],
+      "jenkins_repos": ["core", "enterprise", "nova", "masterfiles", "mission-portal", "buildscripts"],
       "repos": {
         "cfengine/core": ["olehermanse", "vpodzime"],
         "cfengine/enterprise": ["olehermanse", "vpodzime", "craigcomstock"],
