@@ -403,7 +403,10 @@ class PR():
             self.labels = [label["name"].lower() for label in data["labels"]]
 
         self.comments = Comments(self.github.get(self.comments_url), github)
-        self.body = data["body"].lower()
+        if "body" in data and data["body"]:
+            self.body = data["body"].lower()
+        else:
+            self.body = ""
         self.merge_with = {}
         for word in self.body.split():
             for repo in github.known_repos:
