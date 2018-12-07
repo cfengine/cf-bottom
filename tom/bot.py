@@ -210,9 +210,17 @@ class Bot():
         else:
             log.warning("Couldn't find any open pull requests!")
 
+        errs = 0
         for pull in self.pulls:
-            self.handle_pr(pull)
-        log.info("Tom successful")
+            try:
+                self.handle_pr(pull)
+            except AssertionError:
+                log.error("AssertionError encountered while handling '{}'".format(pull["title"]))
+                errs += 1
+        if (errs == 0):
+            log.info("Tom successful")
+        else:
+            log.error("Tom encountered {} errors".format(errs))
 
     def talk(self):
         if not self.interactive:
