@@ -30,8 +30,12 @@ class Jenkins():
 
     def post(self, path, data):
         r = requests.post(path, data=data, headers=self.headers, auth=self.auth)
-        assert r.status_code >= 200 and r.status_code < 300
-        print(r.headers)
+        if not (200 <= r.status_code < 300):
+            log.error("Unexpected HTTP response from Jenkins: {}".format(r.status_code))
+            log.error(str(r.headers))
+            log.error(str(r.text))
+            raise AssertionError("HTTP response {} from Jenkins".format(r.status_code))
+
         try:
             return r.headers, r.json()
         except:
