@@ -107,7 +107,7 @@ class Bot():
             badge_text = "\n\n" + badge_text  # Under looks better
         buildcache = "http://buildcache.cfengine.com"
         packages = "{}/packages/testing-pr/jenkins-pr-pipeline-{}/".format(buildcache, num)
-        new_comment = "{}, I triggered a build:\n\n{}{}\n\n**Jenkins:**{}\n\n**Packages:**{}".format(
+        new_comment = "{}, I triggered a build:\n\n{}{}\n\n**Jenkins:** {}\n\n**Packages:** {}".format(
             response, badge, badge_text, url, packages)
         self.comment(pr, new_comment)
 
