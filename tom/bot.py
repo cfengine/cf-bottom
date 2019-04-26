@@ -69,6 +69,8 @@ class Bot():
             log.info("I have already commented :)")
         elif len(pr.comments) > 0:
             log.info("There are already comments there, so I won't disturb")
+        elif len(pr.reviewers) > 0:
+            log.info("Someone already assigned a reviewer, I won't disturb")
         elif len(pr.reviews) > 0:
             log.info("This PR has reviews already, so I'll leave it to you humans")
         elif pr.has_label("WIP") or "WIP" in pr.title.upper():
