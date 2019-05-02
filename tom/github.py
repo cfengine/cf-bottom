@@ -397,7 +397,7 @@ class PR():
         self.number = data["number"]
         self.api_url = data["url"]
         self.reviews_url = self.api_url + "/reviews"
-        self.reviewers = data["requested_reviewers"]
+        self.requested_reviewers = data["requested_reviewers"]
 
         self.labels = []
         if "labels" in data:
