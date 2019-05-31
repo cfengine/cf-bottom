@@ -34,6 +34,12 @@ class UpdateChecker():
                 parameter_name='branch',
                 short_help='Run dependency updates',
                 long_help='Try to find new versions of dependencies on given branch and create PR with them')
+        dispatcher.register_command(
+                keyword='depstable',
+                callback=lambda branches: self.update_deps_version(branches),
+                parameter_name='branches',
+                short_help='Rebuild dependencies table',
+                long_help='Enumerate used dependency versions and update dependency table. Argument is comma-separated list of branches, NO SPACES')
 
     def get_deps_list(self, branch='master'):
         """Get list of dependencies for given branch.
@@ -129,7 +135,18 @@ class UpdateChecker():
 
     def extract_version_from_filename(self, dep, filename):
         if dep == 'openssl':
-            version = re.search('-([0-9a-z.]*).tar', filename).group(1)
+            # On different branches we use openssl from different sources
+            # (this will be cleaned up soon). When downloading from github,
+            # filename is OpenSSL_1_1_1.tar.gz, where 1_1_1 is version.
+            # When downloading from openssl website, filename for same version
+            # is openssl-1.1.1.tar.gz, and version is 1.1.1.
+            # We first check for website-style version, and if it doesn't match
+            # then we fallback to github-style version. If neither version is
+            # found - match.group(1) will raise an exception.
+            match = re.search('-([0-9a-z.]*).tar', filename)
+            if not match:
+                match = re.search('_([0-9a-z_]*).tar', filename)
+            version = match.group(1)
             separator = 'char'
         elif dep == 'pthreads-w32':
             version = re.search('w32-([0-9-]*)-rel', filename).group(1)
@@ -182,10 +199,24 @@ class UpdateChecker():
         except:
             raise ReleaseMonitoringException('Failed to get version from data received from release-monitoring.org website')
 
+    def get_current_version(self, dep):
+        """Get current version of dependency dep"""
+        # Note: this function partially duplicates next one.
+        # It is done on purpose, since that one does some extra stuff.
+        dist_file_path = 'deps-packaging/{}/distfiles'.format(dep)
+        dist_file = self.buildscripts.get_file(dist_file_path)
+        dist_file = dist_file.strip()
+        old_filename = re.sub('.* ', '', dist_file)
+        (old_version, separator) = self.extract_version_from_filename(dep, old_filename)
+        return old_version
+
     def update_single_dep(self, dep):
         """Check if new version of dependency dep was released and create
         commit updating it in *.spec, dist, source, and README.md files
         """
+        # Note: this function partially duplicates above one.
+        # It is done on purpose, since it will need several other variables
+        # afterwards: dist_file_path, old_filename, and separator.
         log.info('Checking new version of {}'.format(dep))
         dist_file_path = 'deps-packaging/{}/distfiles'.format(dep)
         dist_file = self.buildscripts.get_file(dist_file_path)
@@ -234,6 +265,93 @@ class UpdateChecker():
             self.buildscripts.put_file(spec_file_path, spec_file + '\n')
         self.buildscripts.commit(message)
         return message
+
+    def collect_deps(self, branch):
+        """List used dependencies for a branch, returns a dict like this:
+            {"dep1": "version", "dep2": "version",...}
+            """
+        deps_versions = {}
+        deps_list = self.get_deps_list(branch)
+        for dep in deps_list:
+            deps_versions[dep] = self.get_current_version(dep)
+        return deps_versions
+
+    def update_deps_version(self, branches):
+        # prepare repo
+        repo_name = 'buildscripts'
+        upstream_name = 'cfengine'
+        local_path = "../" + repo_name
+        self.buildscripts = GitRepo(local_path, repo_name, upstream_name, self.username, 'master')
+
+        branches = branches.split(',')
+
+        # fetch versions from all branches
+        deps_table = {}
+        # deps_table is a 2d dict: deps_table[dep][branch]=version
+        branch_column_widths = {}
+        for branch in branches:
+            branch_column_widths[branch] = len(branch)
+            self.buildscripts.checkout(branch)
+            self.buildscripts.run_command('pull')
+            deps_versions = self.collect_deps(branch)
+            # deps_versions is a dict: deps_versions[dep]=version
+            for dep in deps_versions:
+                if not dep in deps_table:
+                    deps_table[dep] = collections.defaultdict(lambda: "-")
+                deps_table[dep][branch] = deps_versions[dep]
+                branch_column_widths[branch] = max(branch_column_widths[branch], len(deps_versions[dep]))
+
+        # patch the readme
+        self.buildscripts.checkout('master')
+        self.readme_file_path = 'deps-packaging/README.md'
+        readme_file = self.buildscripts.get_file(self.readme_file_path)
+        readme_lines = readme_file.split('\n')
+        has_notes = False # flag to say that we're in a table that has "Notes" column
+        for i, line in enumerate(readme_lines):
+            if not line.startswith('| '):
+                continue
+            if line.startswith('| CFEngine version '):
+                has_notes = 'Notes' in line
+                branches_text = ' | '.join([branch.ljust(branch_column_widths[branch]) for branch in branches])
+                line = '| CFEngine version | ' + branches_text + (' | Notes |' if has_notes else ' |')
+            elif line.startswith('|  --'):
+                branches_text = ' | '.join(['-'*branch_column_widths[branch] for branch in branches])
+                line = '|  --------------  | ' + branches_text + (' | ----- |' if has_notes else ' |')
+            else:
+                dep = re.match('\\|  ([a-z0-9-]*) ', line, flags=re.IGNORECASE)
+                if dep:
+                    dep = dep.group(1)
+                else:
+                    log.warn("didn't find dep in line [%s]", line)
+                    continue
+                if dep not in deps_table:
+                    log.warn("unknown dependency in README: [%s] line [%s], will be EMPTY", dep, line)
+                    deps_table[dep] = collections.defaultdict(lambda: "-")
+                if has_notes:
+                    note = re.search('\| [^|]* \|$', line)
+                    if not note:
+                        log.warn("didn't find note in line [%s]", line)
+                        note = '|  |'
+                    note = note.group(0) # group(0) is full matched string
+                branches_text = ' | '.join(deps_table[dep][branch].ljust(branch_column_widths[branch]) for branch in branches)
+                line = '|  %-15s | %s %s' % (dep, branches_text, (note if has_notes else '|'))
+            readme_lines[i] = line
+
+        timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
+        new_branchname = 'deptables-{}'.format(timestamp)
+        self.buildscripts.checkout(new_branchname, True)
+        readme_file = '\n'.join(readme_lines)
+        self.buildscripts.put_file(self.readme_file_path, readme_file)
+        self.buildscripts.commit('Update dependency tables')
+        self.buildscripts.push(new_branchname)
+        pr_text = self.github.create_pr(
+            target_repo='{}/{}'.format(upstream_name, repo_name),
+            target_branch='master',
+            source_user=self.username,
+            source_branch=new_branchname,
+            title='Update dependency tables',
+            text='')
+        self.slack.reply("Dependency tables:\n{}".format(pr_text), True)
 
     def run(self, branch):
         """Run the dependency update for a branch, creating PR in the end"""
