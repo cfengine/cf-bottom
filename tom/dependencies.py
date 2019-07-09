@@ -1,6 +1,7 @@
 import re
 import json
 import requests
+import collections
 import datetime
 import hashlib
 import urllib.request
@@ -307,7 +308,10 @@ class UpdateChecker():
         readme_file = self.buildscripts.get_file(self.readme_file_path)
         readme_lines = readme_file.split('\n')
         has_notes = False # flag to say that we're in a table that has "Notes" column
+        in_hub = False # flag that we're in Hub section
         for i, line in enumerate(readme_lines):
+            if ' Hub ' in line:
+                in_hub = True
             if not line.startswith('| '):
                 continue
             if line.startswith('| CFEngine version '):
@@ -324,6 +328,8 @@ class UpdateChecker():
                 else:
                     log.warn("didn't find dep in line [%s]", line)
                     continue
+                if in_hub and dep == 'postgresql':
+                    dep = 'postgresql-hub'
                 if dep not in deps_table:
                     log.warn("unknown dependency in README: [%s] line [%s], will be EMPTY", dep, line)
                     deps_table[dep] = collections.defaultdict(lambda: "-")
@@ -334,6 +340,8 @@ class UpdateChecker():
                         note = '|  |'
                     note = note.group(0) # group(0) is full matched string
                 branches_text = ' | '.join(deps_table[dep][branch].ljust(branch_column_widths[branch]) for branch in branches)
+                if in_hub:
+                    dep = re.sub('-hub$', '', dep)
                 line = '|  %-15s | %s %s' % (dep, branches_text, (note if has_notes else '|'))
             readme_lines[i] = line
 
