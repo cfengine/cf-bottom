@@ -1,0 +1,136 @@
+# Policy to update and run the Tom GitHub bot
+# Note: This is example policy, for production changes, go to private infra repo
+
+body file control
+{
+    inputs => { "$(sys.local_libdir)/stdlib.cf", "$(sys.local_libdir)/vcs.cf" };
+}
+
+body contain in_tom
+{
+    useshell => "useshell";
+    exec_owner => "tom";
+    chdir => "$(tom_update.tom_dir)";
+}
+
+bundle agent tom_init
+{
+    files:
+        "/home/tom/."
+            create => "true",
+            depth_search => recurse_with_base("inf"),
+            file_select => all,
+            perms => mog("600", "tom", "users");
+    users:
+        "tom"
+            policy => "present",
+            description => "Tom",
+            home_dir => "/home/tom/",
+            group_primary => "users",
+            shell => "/bin/bash";
+}
+
+bundle agent tom_repo_init
+{
+    vars:
+        "tom_dir" string => "/home/tom/self";
+        "remote_args" string => "add origin https://github.com/cf-bottom/self.git";
+    files:
+        "/home/tom/self/."
+            create => "true",
+            depth_search => recurse("inf"),
+            file_select => all,
+            perms => mog("600", "tom", "users");
+    methods:
+        "Init"
+            usebundle => git_init($(tom_dir));
+        "Remote"
+            usebundle => git($(tom_dir), "remote", "$(remote_args)");
+}
+
+bundle agent tom_update
+{
+    vars:
+        "tom_dir" string => "/home/tom/self";
+    classes:
+        "tom_exists" expression => isdir("$(tom_dir)");
+    methods:
+        !tom_exists::
+            "Init"
+                usebundle => tom_repo_init;
+    commands:
+        tom_exists::
+            "git pull origin master"
+                contain => in_tom;
+            "cp /home/tom/self/config.json /home/tom/config.json"
+                contain => in_tom;
+}
+
+bundle agent tom_install
+{
+    commands:
+        "pip3 install --user -r requirements.txt"
+            contain => in_tom;
+}
+
+bundle agent tom_run
+{
+  vars:
+      "secrets" string => "/home/tom/cfengine-secrets.json";
+
+  files:
+      # We promise to create the file if it does not exist as warn only so that we will surface a promise not kept in Mission Portal.
+
+      "$(secrets)"
+        action => policy( "warn" ),
+        handle => "cf-bottom_secrets_exist",
+        create => "true",
+        classes => results( "bundle", "cf_bottom_secrets" );
+
+    commands:
+
+      cf_bottom_secrets_kept.!cf_bottom_secrets_notkept::
+        "python3 -m tom --directory /home/tom/ --log-level info"
+            contain => in_tom,
+            depends_on => { "cf-bottom_secrets_exist" };
+
+  reports:
+      cf_bottom_secrets_notkept::
+      "WARNING: Missing secrets ($(secrets)), skipping cf-bottom run.";
+}
+
+bundle agent tom_main
+{
+   meta:
+     "tags"
+       slist => {"autorun"},
+       if => filesexist( @(config_files) );
+
+    vars:
+        "config_files" slist => {"/home/tom/config.json",
+                                 "/home/tom/TOM_ENABLE"};
+
+    classes:
+        "has_tom_config" expression => filesexist(@(config_files));
+
+    methods:
+        has_tom_config::
+            "Init"
+                usebundle => "tom_init";
+            "Update"
+                usebundle => "tom_update";
+            "Install"
+                usebundle => "tom_install";
+            "Run"
+                usebundle => "tom_run";
+    reports:
+        inform_mode.!has_tom_config::
+            "Skipping execution, config.json or TOM_ENABLE missing in /home/tom";
+}
+
+bundle agent __main__
+{
+    methods:
+        "Run"
+            usebundle => "tom_main";
+}
