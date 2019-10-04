@@ -3,11 +3,12 @@ import requests
 import re
 import os
 import json
+import datetime
 import logging as log
 import requests
 from copy import copy
 
-from tom.utils import pretty
+from tom.utils import pretty, write_json
 
 
 class GitHub():
@@ -396,8 +397,13 @@ class PR():
         self.title = data["title"]
         self.number = data["number"]
         self.api_url = data["url"]
+        self.commits_url = data["commits_url"]
         self.reviews_url = self.api_url + "/reviews"
         self.requested_reviewers = data["requested_reviewers"]
+
+        self.created = datetime.datetime.strptime(data["created_at"], '%Y-%m-%dT%H:%M:%SZ')
+        now = datetime.datetime.now()
+        self.age = now - self.created
 
         self.labels = []
         if "labels" in data:
@@ -440,17 +446,31 @@ class PR():
 
         self.reviews = self.github.get(self.reviews_url)
         self.approvals = []
+        self.denials = []
         for r in self.reviews:
             if r["state"] == "APPROVED":
                 self.approvals.append(r["user"]["login"])
+            elif r["state"] == "CHANGES_REQUESTED":
+                self.denials.append(r["user"]["login"])
+
+        self.commits = self.github.get(self.commits_url)
+        self.emails = []
+        self.commit_messages = []
+        for c in self.commits:
+            self.emails.append(c["commit"]["author"]["email"])
+            self.emails.append(c["commit"]["committer"]["email"])
+            self.commit_messages.append(c["commit"]["message"])
+
+        for message in self.commit_messages:
+            pattern = re.compile("[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
+            email_matches = pattern.findall(message)
+            self.emails.extend(email_matches)
+
+        self.emails = set(self.emails)
 
         # This overwrites for every PR, intentionally, it is just used for
         # easier prototyping/development
-        self.dump_to_file()
-
-    def dump_to_file(self, path="tmp_pr.json"):
-        with open(path, "w") as f:
-            f.write(pretty(self.data))
+        write_json(self.data, "tmp_pr.json")
 
     def has_label(self, label_name):
         label_name = label_name.lower()

@@ -1,5 +1,6 @@
 import sys
 import json
+import hashlib
 
 
 def read_json(path):
@@ -10,6 +11,11 @@ def read_json(path):
     except FileNotFoundError:
         pass
     return data
+
+
+def write_json(data, path):
+    with open(path, "w") as f:
+        f.write(pretty(data))
 
 
 def confirmation(msg):
@@ -25,3 +31,17 @@ def pretty(data):
 
 def user_error(msg):
     sys.exit("Error: {}".format(msg))
+
+
+def email_sha256(email):
+    hash = hashlib.sha256()
+    hash.update(email.encode("utf-8"))
+    hash = hash.hexdigest()
+    data = read_json("tmp_emails.json")
+    if not data:
+        data = {}
+    if email in data and data[email] == hash:
+        return hash
+    data[email] = hash
+    write_json(data, "tmp_emails.json")
+    return hash
