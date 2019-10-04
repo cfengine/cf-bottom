@@ -18,6 +18,8 @@ class Bot():
         self.directory = directory
         self.interactive = interactive
 
+        self.bot_features = config["bot_features"]
+
         self.username = config["username"]
         self.orgs = config["orgs"]
         self.repo_maintainers = config["repos"]
@@ -213,7 +215,8 @@ class Bot():
 
         pr = PR(pr, self.github)
         self.find_reviewers(pr)
-        self.ping_reviewer(pr)
+        if "ping_reviewer" in self.bot_features:
+            self.ping_reviewer(pr)
         self.review(pr)
         self.handle_comments(pr)
 
