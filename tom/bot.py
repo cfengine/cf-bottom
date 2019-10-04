@@ -1,6 +1,7 @@
 import sys
 import random
 import json
+import datetime
 import logging as log
 from copy import copy
 
@@ -69,7 +70,9 @@ class Bot():
             print("")
 
     def ping_reviewer(self, pr):
-        if self.username in pr.comments.users:
+        if pr.age < datetime.timedelta(days=1):
+            log.info("This PR is less than a day old, I won't ping yet")
+        elif self.username in pr.comments.users:
             log.info("I have already commented :)")
         elif len(pr.comments) > 0:
             log.info("There are already comments there, so I won't disturb")

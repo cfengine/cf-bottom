@@ -3,6 +3,7 @@ import requests
 import re
 import os
 import json
+import datetime
 import logging as log
 import requests
 from copy import copy
@@ -399,6 +400,10 @@ class PR():
         self.commits_url = data["commits_url"]
         self.reviews_url = self.api_url + "/reviews"
         self.requested_reviewers = data["requested_reviewers"]
+
+        self.created = datetime.datetime.strptime(data["created_at"], '%Y-%m-%dT%H:%M:%SZ')
+        now = datetime.datetime.now()
+        self.age = now - self.created
 
         self.labels = []
         if "labels" in data:
