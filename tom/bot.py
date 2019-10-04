@@ -9,7 +9,7 @@ from tom.jenkins import Jenkins
 from tom.slack import Slack, CommandDispatcher
 from tom.dependencies import UpdateChecker
 from tom.changelog import ChangelogGenerator
-from tom.utils import confirmation, pretty
+from tom.utils import confirmation, pretty, email_sha256
 
 
 class Bot():
@@ -24,6 +24,8 @@ class Bot():
         self.default_maintainers = config["reviewers"]
         self.trusted = config["trusted"]
         self.jenkins_repos = config["jenkins_repos"]
+        banned_emails = config.get("banned_emails", {})
+        self.banned_emails = [v for v in banned_emails.values()]
 
         self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets, self.username)
         self.github = GitHub(secrets["GITHUB_TOKEN"], self.username, self.jenkins_repos)
@@ -84,19 +86,42 @@ class Bot():
 
     def review(self, pr):
         tom = self.username
-        if tom not in pr.maintainers:
+        log.info("Reviewing: {}".format(pr.title))
+
+        if tom in pr.denials:
+            log.info("I've already denied this PR")
             return
-        if tom in pr.approvals:
+
+        log.debug("E-mails: {}".format(pr.emails))
+        bad_emails = set()
+        for email in pr.emails:
+            hash = email_sha256(email)
+            log.debug("{}: {}".format(email, hash))
+            if email in self.banned_emails or hash in self.banned_emails:
+                log.info("Found banned email: " + email)
+                bad_emails.add(email)
+
+        obfuscated = [f"{e[0]}***@{e[e.index('@')+1:]}" for e in bad_emails]
+        bad_emails = ",".join(obfuscated)
+
+        if bad_emails:
+            body = f"Please use a company e-mail instead of {bad_emails}"
+            event = "REQUEST_CHANGES"
+            data = {"body": body, "event": event}
+            self.post(pr.reviews_url, data)
+            print("Denied PR: {}".format(pr.title))
             return
-        for person in pr.approvals:
-            if person in pr.maintainers:
-                log.info("Reviewing: {}".format(pr.title))
-                log.info("Approved by: " + str(pr.approvals))
-                body = "I trust @{}, approved!".format(person)
-                event = "APPROVE"
-                data = {"body": body, "event": event}
-                self.post(pr.reviews_url, data)
-                print("Approved PR: {}".format(pr.title))
+
+        if tom in pr.maintainers and tom not in [pr.denials + pr.approvals]:
+            for person in pr.approvals:
+                if person in pr.maintainers:
+                    log.info("Approved by: " + str(pr.approvals))
+                    body = "I trust @{}, approved!".format(person)
+                    event = "APPROVE"
+                    data = {"body": body, "event": event}
+                    self.post(pr.reviews_url, data)
+                    print("Approved PR: {}".format(pr.title))
+                    return
 
     def comment_badge(self, pr, num, url, badge_text):
         badge_icon = "{url}/buildStatus/icon?job={job}&build={num}".format(
