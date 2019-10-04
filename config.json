@@ -34,13 +34,13 @@
       "username": "mender-bottom",
       "secrets": "mender-secrets.json",
       "trusted": ["oleorhagen", "kacf", "pasinskim",  "olehermanse"],
-      "reviewers": ["oleorhagen", "kacf"],
+      "reviewers": ["oleorhagen"],
       "jenkins": "https://mender-jenkins.mender.io/",
       "jenkins_job": "mender-builder",
       "bot_features": ["create_pr_magic"],
       "orgs": [],
       "repos": {
-        "mendersoftware/mender": ["kacf", "oleorhagen", "pasinskim"],
+        "mendersoftware/mender": ["oleorhagen"],
         "mendersoftware/gui": ["michaelatmender"]
       }
     }
