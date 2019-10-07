@@ -13,7 +13,8 @@
           "craig": "5a09cedd03ac8f6625afbf82320d9182ab56e507311f43d02aace8f5fe6d93f5",
           "igor": "56d20f3d01cf0c08db466fb629187ff41a30bb170623251b7e14e32c3c1a67a4",
           "vratislav": "54a458f06da35064562b258e52f5b233dbbd561a51816097b7bce1a306775d05",
-          "ole": "94534ae37a66ade3bae446c81cc15433efcda3a8516ffe6b2c2e0f6dd70127dd"
+          "ole": "94534ae37a66ade3bae446c81cc15433efcda3a8516ffe6b2c2e0f6dd70127dd",
+          "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
       },
       "orgs": ["cfengine"],
       "jenkins_repos": ["core", "enterprise", "nova", "masterfiles", "mission-portal", "buildscripts"],
@@ -33,13 +34,16 @@
       "username": "mender-bottom",
       "secrets": "mender-secrets.json",
       "trusted": ["oleorhagen", "kacf", "pasinskim",  "olehermanse"],
-      "reviewers": ["oleorhagen", "kacf"],
+      "reviewers": ["oleorhagen"],
       "jenkins": "https://mender-jenkins.mender.io/",
       "jenkins_job": "mender-builder",
       "bot_features": ["create_pr_magic"],
+      "banned_emails": {
+          "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
+      },
       "orgs": [],
       "repos": {
-        "mendersoftware/mender": ["kacf", "oleorhagen", "pasinskim"],
+        "mendersoftware/mender": ["oleorhagen"],
         "mendersoftware/gui": ["michaelatmender"]
       }
     }
