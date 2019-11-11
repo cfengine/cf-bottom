@@ -414,6 +414,10 @@ class PR():
             self.body = data["body"].lower()
         else:
             self.body = ""
+
+        # Look for links to other repos in a PR description (Merge together),
+        # the links are compared to jenkins_repos from config, and used
+        # as parameters when requesting build via Jenkins API.
         self.merge_with = {}
         for word in self.body.split():
             for repo in github.known_repos:
