@@ -147,7 +147,7 @@ class ChangelogGenerator():
     def run(self, branch):
         """Generate changelogs on a branch, creating PR in the end"""
         self.slack.reply("Generating changelogs on " + branch)
-        repo_names = ['core', 'masterfiles', 'enterprise', 'nova', 'mission-portal', 'buildscripts']
+        repo_names = ['core', 'masterfiles', 'nova', 'mission-portal', 'buildscripts', 'enterprise']
         # checkout all repos to the required branch
         repos = (GitRepo(
                     dirname=os.path.join(self.repos_root, name),
