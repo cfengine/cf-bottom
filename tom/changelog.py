@@ -62,7 +62,8 @@ class ChangelogGenerator():
                 'three groups of numbers separated by dots and ending with '+
                 'colon, for example "3.12.0:"').format(changelog_lines[:5]))
 
-    def get_next_version(self, old_version, branch):
+    @staticmethod
+    def get_next_version(old_version, branch):
         version_parts = old_version.split('.')
         if branch == 'master':
             try:
