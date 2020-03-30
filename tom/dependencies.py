@@ -347,7 +347,7 @@ class UpdateChecker():
 
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = 'deptables-{}'.format(timestamp)
-        self.buildscripts.checkout(new_branchname, True)
+        self.buildscripts.checkout(new_branchname, new=True)
         readme_file = '\n'.join(readme_lines)
         self.buildscripts.put_file(self.readme_file_path, readme_file)
         self.buildscripts.commit('Update dependency tables')
@@ -371,7 +371,7 @@ class UpdateChecker():
         self.buildscripts = GitRepo(local_path, repo_name, upstream_name, self.username, branch)
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = '{}-deps-{}'.format(branch, timestamp)
-        self.buildscripts.checkout(new_branchname, True)
+        self.buildscripts.checkout(new_branchname, new=True)
         self.readme_file_path = 'deps-packaging/README.md'
         readme_file = self.buildscripts.get_file(self.readme_file_path)
         self.readme_lines = readme_file.split('\n')

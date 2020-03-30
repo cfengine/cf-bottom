@@ -120,7 +120,7 @@ class ChangelogGenerator():
         # checkout new branch
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
         new_branchname = '{}-changelog-{}'.format(new_version, timestamp)
-        repo.checkout(new_branchname, True)
+        repo.checkout(new_branchname, new=True)
 
         if name != 'enterprise':
             # generate changelog only for this repo
