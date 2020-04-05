@@ -10,6 +10,7 @@ from tom.jenkins import Jenkins
 from tom.slack import Slack, CommandDispatcher
 from tom.dependencies import UpdateChecker
 from tom.changelog import ChangelogGenerator
+from tom.tag import Tagger
 from tom.utils import confirmation, pretty, email_sha256
 
 
