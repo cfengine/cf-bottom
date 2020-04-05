@@ -47,6 +47,8 @@ class Bot():
         if 'generate_changelogs' in config["bot_features"]:
             self.changelogger = ChangelogGenerator(
                 self.github, self.slack, self.dispatcher, 'Lex-2008')
+        if 'tag_builds' in config["bot_features"]:
+            self.tagger = Tagger(self.github, self.slack, self.dispatcher, 'Lex-2008')
 
     def post(self, path, data, msg=None):
         if self.interactive:
