@@ -3,7 +3,7 @@
     {
       "username": "cf-bottom",
       "secrets": "cfengine-secrets.json",
-      "trusted": ["nickanderson", "vpodzime", "craigcomstock", "olehermanse", "Lex-2008", "karlhto", "aleksandrychev", "oleorhagen"],
+      "trusted": ["nickanderson", "vpodzime", "craigcomstock", "olehermanse", "Lex-2008", "aleksandrychev", "oleorhagen"],
       "reviewers": ["olehermanse", "vpodzime"],
       "jenkins": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
@@ -26,7 +26,7 @@
         "cfengine/buildscripts": ["craigcomstock", "Lex-2008"],
         "cfengine/documentation": ["nickanderson", "craigcomstock"],
         "cfengine/contrib": ["nickanderson"],
-        "cf-bottom/self": ["olehermanse", "vpodzime", "cf-bottom", "karlhto"],
+        "cf-bottom/self": ["olehermanse", "vpodzime", "cf-bottom"],
         "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"]
       }
     },
