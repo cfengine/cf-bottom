@@ -120,7 +120,7 @@ class Bot():
             print("Denied PR: {}".format(pr.title))
             return
 
-        if tom in pr.maintainers and tom not in [pr.denials + pr.approvals]:
+        if tom in pr.maintainers and tom not in pr.denials + pr.approvals:
             for person in pr.approvals:
                 if person in pr.maintainers:
                     log.info("Approved by: " + str(pr.approvals))
