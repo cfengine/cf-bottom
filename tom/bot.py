@@ -10,6 +10,7 @@ from tom.jenkins import Jenkins
 from tom.slack import Slack, CommandDispatcher
 from tom.dependencies import UpdateChecker
 from tom.changelog import ChangelogGenerator
+from tom.packages import PackageMapper
 from tom.tag import Tagger
 from tom.utils import confirmation, pretty, email_sha256
 
@@ -47,6 +48,9 @@ class Bot():
             self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
         if 'generate_changelogs' in config["bot_features"]:
             self.changelogger = ChangelogGenerator(
+                self.github, self.slack, self.dispatcher, 'Lex-2008')
+        if 'map_packages' in config["bot_features"]:
+            self.package_mapper = PackageMapper(
                 self.github, self.slack, self.dispatcher, 'Lex-2008')
         if 'tag_builds' in config["bot_features"]:
             self.tagger = Tagger(self.github, self.slack, self.dispatcher, 'Lex-2008')
