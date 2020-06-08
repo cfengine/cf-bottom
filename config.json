@@ -3,7 +3,7 @@
     {
       "username": "cf-bottom",
       "secrets": "cfengine-secrets.json",
-      "trusted": ["nickanderson", "vpodzime", "craigcomstock", "olehermanse", "Lex-2008", "aleksandrychev", "oleorhagen"],
+      "trusted": ["nickanderson", "vpodzime", "craigcomstock", "olehermanse", "Lex-2008", "aleksandrychev", "oleorhagen", "lluiscampos"],
       "reviewers": ["olehermanse", "vpodzime"],
       "jenkins": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
