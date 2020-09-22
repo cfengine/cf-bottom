@@ -263,7 +263,7 @@ class UpdateChecker():
             pass
         else:
             spec_file = spec_file.replace(old_version, new_version)
-            self.buildscripts.put_file(spec_file_path, spec_file + '\n')
+            self.buildscripts.put_file(spec_file_path, spec_file)
         self.buildscripts.commit(message)
         return message
 
