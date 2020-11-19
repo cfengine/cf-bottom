@@ -115,15 +115,20 @@ class PackageMapper():
                         raise JSONStructureError('no release with "lts_branch"=="%s" and "latest_on_branch"==true in %s JSON' % (branch, releases_url)) from e
 
                 packages = self.collect_packages(release_url)
+                # masterfiles hack #1: different parts of code expect the package to be called differently.
+                # Instead of fixing it properly, we will just support both namings
+                packages['VIRTUAL_PACKAGES_masterfiles'] = packages['PACKAGES_VIRTUAL_PACKAGES_masterfiles']
                 # sort packages into agent/hub ones
                 if product == 'community':
                     # for community, they are the same
                     hub_packages = agent_packages = packages
                 else:
+                    # masterfiles hack #2: different parts of code expect package to be in different groups
+                    # ('hub' vs 'agent'). Instead of fixing it properly, we will just include it in both.
                     hub_packages = {platform: value for (platform, value) in packages.items() if
-                                    ('_HUB_' in platform) or (platform == "VIRTUAL_PACKAGES_masterfiles")}
+                                    ('_HUB_' in platform) or ("masterfiles" in platform)}
                     agent_packages = {platform: value for (platform, value) in packages.items()
-                                      if ('_HUB_' not in platform) and (platform != "VIRTUAL_PACKAGES_masterfiles")}
+                                      if ('_HUB_' not in platform)}
                 result['agent'][codename] = agent_packages
                 result['hub'][codename] = hub_packages
             # note that following code uses "branch" and "version" variables
