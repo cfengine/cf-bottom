@@ -63,6 +63,9 @@ class Tagger():
                 raise TagParsingException('Could not split tag [%s] into parts' % old_tag)
         else:
             # 3.15.0 -> 3.16.0-build1 or 3.15.1-build1, depending on branch
+            # But first, strip release number from version
+            # 3.12.5-2 -> 3.12.5
+            old_tag = re.sub('-[0-9]+','',old_tag)
             next_version = ChangelogGenerator.get_next_version(old_tag, branch)
             return next_version + '-build1'
 
