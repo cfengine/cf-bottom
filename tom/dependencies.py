@@ -304,7 +304,7 @@ class UpdateChecker():
 
         # patch the readme
         self.buildscripts.checkout('master')
-        self.readme_file_path = 'deps-packaging/README.md'
+        self.readme_file_path = 'README.md'
         readme_file = self.buildscripts.get_file(self.readme_file_path)
         readme_lines = readme_file.split('\n')
         has_notes = False # flag to say that we're in a table that has "Notes" column
@@ -316,33 +316,58 @@ class UpdateChecker():
                 continue
             if line.startswith('| CFEngine version '):
                 has_notes = 'Notes' in line
-                branches_text = ' | '.join([branch.ljust(branch_column_widths[branch]) for branch in branches])
-                line = '| CFEngine version | ' + branches_text + (' | Notes |' if has_notes else ' |')
-            elif line.startswith('|  --'):
-                branches_text = ' | '.join(['-'*branch_column_widths[branch] for branch in branches])
-                line = '|  --------------  | ' + branches_text + (' | ----- |' if has_notes else ' |')
+                # Desired output row: ['CFEngine version', branches..., 'Notes']
+                # Also note that list addition is concatenation: [1] + [2] == [1, 2]
+                row = (["CFEngine version"] +
+                       [branch for branch in branches] +
+                       (['Notes'] if has_notes else [])
+                      )
+                # Width of source columns
+                column_widths = [len(x) for x in line.split('|')]
+                # Note that first and last column widths are zero, since line
+                # begins and ends with '|'. We're actually interested in widths
+                # of first column (with words "CFEngine version" in it) and,
+                # possibly, last ("Notes", which is now second-to-last).
+                # Between them are branch column widths, calculated earlier.
+                # Also we substract 2 to remove column "padding".
+                column_widths = ([column_widths[1]-2] + # "CFEngine version"
+                                 [branch_column_widths[branch] for branch in branches] +
+                                 ([column_widths[-2]-2] if has_notes else []) # "Notes", if exists
+                                )
+                line = '| ' + (" | ".join((val.ljust(width) for val, width in zip(row, column_widths)))) + ' |'
+            elif line.startswith('| --'):
+                line = '| ' + (' | '.join(('-'*width for width in column_widths))) + ' |'
             else:
-                dep = re.match('\\|  ([a-z0-9-]*) ', line, flags=re.IGNORECASE)
-                if dep:
-                    dep = dep.group(1)
+                # Sample line:
+                # | [PHP](http://php.net/) ...
+                # For it, in regexp below,
+                # \[([a-z0-9-]*)\] will match [PHP]
+                # \((.*?)\) will match (http://php.net/)
+                match = re.match('\| \[([a-z0-9-]*)\]\((.*?)\) ', line, flags=re.IGNORECASE)
+                if match:
+                    dep_title = match.group(1)
+                    dep = dep_title.lower()
+                    url = match.group(2)
                 else:
                     log.warn("didn't find dep in line [%s]", line)
                     continue
-                if in_hub and dep == 'postgresql':
-                    dep = 'postgresql-hub'
                 if dep not in deps_table:
                     log.warn("unknown dependency in README: [%s] line [%s], will be EMPTY", dep, line)
                     deps_table[dep] = collections.defaultdict(lambda: "-")
                 if has_notes:
-                    note = re.search('\| [^|]* \|$', line)
+                    note = re.search('\| ([^|]*) \|$', line)
                     if not note:
                         log.warn("didn't find note in line [%s]", line)
-                        note = '|  |'
-                    note = note.group(0) # group(0) is full matched string
-                branches_text = ' | '.join(deps_table[dep][branch].ljust(branch_column_widths[branch]) for branch in branches)
+                        note = ''
+                    else:
+                        note = note.group(1)
                 if in_hub:
                     dep = re.sub('-hub$', '', dep)
-                line = '|  %-15s | %s %s' % (dep, branches_text, (note if has_notes else '|'))
+                row = (["[%s](%s)" % (dep_title, url)] +
+                       [deps_table[dep][branch] for branch in branches] +
+                       ([note] if has_notes else [])
+                      )
+                line = '| ' + (" | ".join((val.ljust(width) for val, width in zip(row, column_widths)))) + ' |'
             readme_lines[i] = line
 
         timestamp = re.sub('[^0-9-]', '_', str(datetime.datetime.today()))
