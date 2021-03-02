@@ -94,24 +94,24 @@ class UpdateChecker():
         version_components[-1] = str(int(version_components[-1]) + increment)
         return separator.join(version_components)
 
-    def checkfile(self, url, md5=False):
-        """Checks if file on given URL exists and optionally returns its md5 sum
+    def checkfile(self, url, sha256=False):
+        """Checks if file on given URL exists and optionally returns its sha256 sum
            Args:
                url - URL to check (starting with http or ftp, other protocols might not work)
-               md5 - set it to True to force downloading file and returning md5 sum
+               sha256 - set it to True to force downloading file and returning sha256 sum
                    (otherwise, for http[s] we use HEAD request)
            Returns:
-               True, False, or md5 of a linked file
+               True, False, or sha256 of a linked file
         """
         log.debug('checking URL: ' + url)
         try:
-            if not md5 and url.startswith('http'):
+            if not sha256 and url.startswith('http'):
                 log.debug('testing with HEAD')
                 r = requests.head(url)
                 return r.status_code >= 200 and r.status_code < 300
             else:
                 log.debug('getting whole file')
-                m = hashlib.md5()
+                m = hashlib.sha256()
                 with urllib.request.urlopen(url) as f:
                     data = f.read(4096)
                     while data:
@@ -174,7 +174,7 @@ class UpdateChecker():
             # because sometimes version might be in directory name, too
             new_url = old_url.replace(old_version, new_version)
             url_result = self.checkfile(new_url)
-            # note that url_result might be True, False, or string with md5 hash
+            # note that url_result might be True, False, or string with sha256 hash
         # Loop ends when `increment` points to non-existing version -
         # so we need to decrease it to point to last existing one
         increment -= 1
@@ -237,15 +237,15 @@ class UpdateChecker():
             return False
         new_filename = old_filename.replace(old_version, new_version)
         new_url = old_url.replace(old_version, new_version)
-        md5sum = self.checkfile(new_url, True)
-        if not md5sum:
+        sha256sum = self.checkfile(new_url, True)
+        if not sha256sum:
             message = 'Update {} from {} to {} FAILED to download {}'.format(dep, old_version, new_version, new_url)
             log.warn(message)
             self.slack.reply(message)
             return False
         message = 'Update {} from {} to {}'.format(dep, old_version, new_version)
         log.info(message)
-        dist_file = '{}  {}'.format(md5sum, new_filename)
+        dist_file = '{}  {}'.format(sha256sum, new_filename)
         self.buildscripts.put_file(dist_file_path, dist_file + '\n')
         source_file = source_file.replace(old_version, new_version)
         self.buildscripts.put_file(source_file_path, source_file + '\n')
