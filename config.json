@@ -17,7 +17,7 @@
           "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
       },
       "orgs": ["cfengine"],
-      "jenkins_repos": ["libntech", "core", "enterprise", "nova", "masterfiles", "mission-portal", "buildscripts"],
+      "jenkins_repos": ["documentation", "documentation-generator", "libntech", "core", "enterprise", "nova", "masterfiles", "mission-portal", "buildscripts"],
       "repos": {
         "cfengine/core": ["olehermanse", "vpodzime"],
         "cfengine/enterprise": ["olehermanse", "vpodzime", "craigcomstock"],
@@ -25,6 +25,7 @@
         "cfengine/masterfiles": ["craigcomstock", "nickanderson"],
         "cfengine/buildscripts": ["craigcomstock", "Lex-2008"],
         "cfengine/documentation": ["nickanderson", "craigcomstock"],
+        "cfengine/documentation-generator": ["nickanderson", "craigcomstock"],
         "cfengine/contrib": ["nickanderson"],
         "cf-bottom/self": ["olehermanse", "vpodzime", "cf-bottom"],
         "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"]
