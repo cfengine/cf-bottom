@@ -145,7 +145,7 @@ class GitHubInterface():
             "This takes time so instead of doing it on every `pr` command, " +
             "we store this in cache. And this command refreshes the cache")
         dispatcher.register_command(
-            'pr', lambda: self.create_pr_magic(), False,
+            'pr', lambda: self.create_prs_from_slack(), False,
             'make pull request from the branch you last pushed to', "")
 
     def set_account(self, username):
@@ -320,7 +320,7 @@ class GitHubInterface():
                         parent_branch = branch_name
         return (parent_repo, parent_branch)
 
-    def create_pr_magic(self):
+    def create_prs_from_slack(self):
         """Create pull request for a branch where author of current slack
         message last pushed to
         """

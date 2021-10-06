@@ -42,7 +42,7 @@ class Bot():
             username=self.username,
             interactive=interactive)
         self.dispatcher = CommandDispatcher(self.slack)
-        if 'create_pr_magic' in config["bot_features"]:
+        if 'create_prs_from_slack' in config["bot_features"]:
             self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
         if 'update_dependencies' in config["bot_features"]:
             self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
@@ -138,7 +138,7 @@ class Bot():
             log.info("I've already denied this PR")
             return
 
-        if "check_emails" in self.bot_features:
+        if "check_commit_emails" in self.bot_features:
             success = self.check_emails(pr)
             if not success:
                 return
@@ -237,7 +237,7 @@ class Bot():
 
         pr = PR(pr, self.github)
         self.find_reviewers(pr)
-        if "ping_reviewer" in self.bot_features:
+        if "ping_reviewers" in self.bot_features:
             self.ping_reviewer(pr)
         self.review(pr)
         self.handle_comments(pr)

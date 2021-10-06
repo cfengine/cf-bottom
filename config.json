@@ -19,14 +19,15 @@
       "jenkins": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
       "bot_features": [
-        "create_pr_magic",
+        "check_commit_emails",
+        "ping_reviewers",
+        "approve_prs",
+        "report_open_prs",
+        "create_prs_from_slack",
         "update_dependencies",
         "generate_changelogs",
         "map_packages",
-        "tag_builds",
-        "ping_reviewer",
-        "email_check",
-        "dependabot_open_prs"
+        "tag_builds"
       ],
       "banned_emails": {
         "karl": "551bd622cc706873476be5b0d9ecd733f8e24585418fcf201b4c238c6125a89a",
