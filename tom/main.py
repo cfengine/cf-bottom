@@ -48,7 +48,7 @@ def load_config(directory):
     return config
 
 
-def run_all(directory, interactive):
+def run_all_bots(directory, interactive):
     runs = 0
     config = load_config(directory)
     assert len(config["bots"]) > 0
@@ -104,7 +104,7 @@ def main():
     if args.talk_user:
         run_talk(args.directory, args.talk_user, args.interactive)
     else:
-        run_all(args.directory, args.interactive)
+        run_all_bots(args.directory, args.interactive)
 
 
 if __name__ == "__main__":
