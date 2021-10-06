@@ -96,14 +96,19 @@ class Bot():
                 thanks=thanks, pr=pull, user=pr.reviewer)
             self.comment(pr, comment)
 
-    def review(self, pr):
-        tom = self.username
-        log.info("Reviewing: {}".format(pr.title))
+    def leave_review(self, pr):
+        if tom in pr.maintainers and tom not in pr.denials + pr.approvals:
+            for person in pr.approvals:
+                if person in pr.maintainers:
+                    log.info("Approved by: " + str(pr.approvals))
+                    body = "I trust @{}, approved!".format(person)
+                    event = "APPROVE"
+                    data = {"body": body, "event": event}
+                    self.post(pr.reviews_url, data)
+                    print("Approved PR: {}".format(pr.title))
+                    return
 
-        if tom in pr.denials:
-            log.info("I've already denied this PR")
-            return
-
+    def check_emails(self, pr):
         log.debug("E-mails: {}".format(pr.emails))
         bad_emails = set()
         for email in pr.emails:
@@ -122,18 +127,25 @@ class Bot():
             data = {"body": body, "event": event}
             self.post(pr.reviews_url, data)
             print("Denied PR: {}".format(pr.title))
+            return False
+        return True
+
+    def review(self, pr):
+        tom = self.username
+        log.info("Reviewing: {}".format(pr.title))
+
+        if tom in pr.denials:
+            log.info("I've already denied this PR")
             return
 
-        if tom in pr.maintainers and tom not in pr.denials + pr.approvals:
-            for person in pr.approvals:
-                if person in pr.maintainers:
-                    log.info("Approved by: " + str(pr.approvals))
-                    body = "I trust @{}, approved!".format(person)
-                    event = "APPROVE"
-                    data = {"body": body, "event": event}
-                    self.post(pr.reviews_url, data)
-                    print("Approved PR: {}".format(pr.title))
-                    return
+        if "check_emails" in self.bot_features:
+            success = self.check_emails(pr)
+            if not success:
+                return
+
+        if "approve_prs" in self.bot_features:
+            self.leave_review(pr)
+
 
     def comment_badge(self, pr, num, url, badge_text):
         badge_icon = "{url}/buildStatus/icon?job={job}&build={num}".format(
