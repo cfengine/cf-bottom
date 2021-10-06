@@ -24,7 +24,9 @@
         "generate_changelogs",
         "map_packages",
         "tag_builds",
-        "ping_reviewer"
+        "ping_reviewer",
+        "email_check",
+        "dependabot_open_prs"
       ],
       "banned_emails": {
         "karl": "551bd622cc706873476be5b0d9ecd733f8e24585418fcf201b4c238c6125a89a",
@@ -59,19 +61,11 @@
     {
       "username": "mender-bottom",
       "secrets": "mender-secrets.json",
-      "trusted": ["oleorhagen", "kacf", "pasinskim", "olehermanse"],
-      "reviewers": ["oleorhagen"],
-      "jenkins": "https://mender-jenkins.mender.io/",
-      "jenkins_job": "mender-builder",
-      "bot_features": ["create_pr_magic"],
+      "bot_features": ["dependabot_open_prs", "email_check"],
       "banned_emails": {
         "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
       },
-      "orgs": [],
-      "repos": {
-        "mendersoftware/mender": ["oleorhagen"],
-        "mendersoftware/gui": ["michaelatmender"]
-      }
+      "orgs": [ "mendersoftware" ]
     }
   ]
 }
