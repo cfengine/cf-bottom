@@ -53,7 +53,7 @@ def run_all_bots(directory, interactive):
     runs = 0
     config = load_config(directory)
     assert len(config["bots"]) > 0
-    reports = Reports()
+    reports = Reports(directory)
     for bot_data in config["bots"]:
         secrets_data = bot_data["secrets_data"]
         if not secrets_data:

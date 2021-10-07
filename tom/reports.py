@@ -5,8 +5,9 @@ import logging as log
 from tom.utils import write_json
 
 class Reports():
-    def __init__(self):
+    def __init__(self, directory):
         self._prs = []
+        self.directory = os.path.join(directory, "reports")
 
     def log_pr(self, pr):
         self._prs.append(pr)
@@ -40,6 +41,6 @@ class Reports():
                 prs = prs[0:10]
             dictionary = {"count": len(prs), "open_prs": prs}
             write_json(dictionary, path)
-        save_to_file(open, "reports/open_prs.json")
-        save_to_file(dependabot, "reports/dependabot_prs.json")
-        save_to_file(aged, "reports/aged_prs.json")
+        save_to_file(open, os.path.join(self.directory, "open_prs.json"))
+        save_to_file(dependabot, os.path.join(self.directory, "dependabot_prs.json"))
+        save_to_file(aged, os.path.join(self.directory, "aged_prs.json"))
