@@ -12,14 +12,14 @@ from tom.dependencies import UpdateChecker
 from tom.changelog import ChangelogGenerator
 from tom.packages import PackageMapper
 from tom.tag import Tagger
-from tom.utils import confirmation, pretty, email_sha256
-
+from tom.utils import confirmation, pretty, email_sha256, write_json
 
 class Bot():
-    def __init__(self, config, secrets, directory, interactive):
+    def __init__(self, config, secrets, directory, interactive, reports):
         self.secrets = secrets
         self.directory = directory
         self.interactive = interactive
+        self.reports = reports
 
         self.bot_features = config["bot_features"]
 
@@ -248,6 +248,9 @@ class Bot():
             self.ping_reviewer(pr)
         self.review(pr)
         self.handle_comments(pr)
+
+        if "report_open_prs" in self.bot_features:
+            self.reports.log_pr(pr)
 
     def run(self):
         self.repos = []

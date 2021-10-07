@@ -3,28 +3,29 @@ import argparse
 import logging as log
 
 from tom.bot import Bot
+from tom.reports import Reports
 from tom.utils import read_json, user_error
 
 
-def setup_bot(directory, interactive, data):
+def setup_bot(directory, interactive, data, reports):
     secrets = data["secrets_data"]
     del data["secrets_data"]
-    return Bot(data, secrets, directory, interactive)
+    return Bot(data, secrets, directory, interactive, reports)
 
 
-def run_talk(directory, user, interactive):
+def run_talk(directory, user, interactive, reports):
     config = load_config(directory)
     assert len(config["bots"]) > 0
     for bot_data in config["bots"]:
         if bot_data["username"] == user:
-            bot = setup_bot(directory, interactive, bot_data)
+            bot = setup_bot(directory, interactive, bot_data, reports)
             bot.talk()
             return
     user_error("Couldn't find config for bot '{}'".format(user))
 
 
-def run_bot(directory, interactive, data):
-    bot = setup_bot(directory, interactive, data)
+def run_bot(directory, interactive, data, reports):
+    bot = setup_bot(directory, interactive, data, reports)
     bot.run()
 
 
@@ -52,6 +53,7 @@ def run_all_bots(directory, interactive):
     runs = 0
     config = load_config(directory)
     assert len(config["bots"]) > 0
+    reports = Reports()
     for bot_data in config["bots"]:
         secrets_data = bot_data["secrets_data"]
         if not secrets_data:
@@ -60,10 +62,11 @@ def run_all_bots(directory, interactive):
                     bot_data["username"], bot_data["secrets_path"]))
             continue
 
-        run_bot(directory, interactive, bot_data)
+        run_bot(directory, interactive, bot_data, reports)
         runs += 1
     if runs <= 0:
         user_error("Did not complete any runs, check config")
+    reports.dump()
 
 
 def get_args():
