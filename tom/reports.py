@@ -1,5 +1,7 @@
 import os
 import datetime
+import logging as log
+
 from tom.utils import write_json
 
 class Reports():
@@ -11,8 +13,11 @@ class Reports():
 
     def dump(self):
         if not self._prs:
+            log.info("Nothing to report - skipping dump")
             return
         os.makedirs("reports/", exist_ok=True)
+
+        log.info("PRs for reports: " + str(len(self._prs)))
         open = []
         dependabot = []
         aged = []
