@@ -37,9 +37,10 @@ class Reports():
         def save_to_file(prs, path):
             # Limit to prevent too big files for reporting
             # Need to adjust policy to not report whole file as 1 variable
+            count = len(prs)
             if len(prs) > 4:
                 prs = prs[0:4]
-            dictionary = {"prs": prs}
+            dictionary = {"count": count, "prs": prs}
             write_json(dictionary, path, prettify=False)
         save_to_file(all, os.path.join(self.directory, "all_prs.json"))
         save_to_file(dependabot, os.path.join(self.directory, "dependabot_prs.json"))
