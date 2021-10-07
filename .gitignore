@@ -8,6 +8,9 @@ JENKINS_USER
 # tmp data
 tmp*
 
+# Reports
+*_prs.json
+
 # logs
 *.log
 
