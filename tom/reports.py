@@ -19,19 +19,19 @@ class Reports():
         os.makedirs("reports/", exist_ok=True)
 
         log.info("PRs for reports: " + str(len(self._prs)))
-        open = []
+        all = []
         dependabot = []
-        aged = []
+        old = []
         for pr in self._prs:
             data = {}
             data["url"] = pr.url
             data["title"] = pr.title
             data["created"] = str(pr.created)
             data["author"] = pr.author
-            open.append(data)
+            all.append(data)
             if datetime.datetime.now() - pr.created < datetime.timedelta(days=14):
                 continue
-            aged.append(data)
+            old.append(data)
             if pr.author == "dependabot":
                 dependabot.append(data)
         def save_to_file(prs, path):
@@ -39,8 +39,8 @@ class Reports():
             # Need to adjust policy to not report whole file as 1 variable
             if len(prs) > 10:
                 prs = prs[0:10]
-            dictionary = {"count": len(prs), "open_prs": prs}
+            dictionary = {"count": len(prs), "all_prs": prs}
             write_json(dictionary, path)
-        save_to_file(open, os.path.join(self.directory, "open_prs.json"))
+        save_to_file(all, os.path.join(self.directory, "all_prs.json"))
         save_to_file(dependabot, os.path.join(self.directory, "dependabot_prs.json"))
-        save_to_file(aged, os.path.join(self.directory, "aged_prs.json"))
+        save_to_file(old, os.path.join(self.directory, "old_prs.json"))
