@@ -49,17 +49,17 @@ class Bot():
                 interactive=interactive)
             self.dispatcher = CommandDispatcher(self.slack)
 
-        if 'create_prs_from_slack' in config["bot_features"]:
+        if 'create_prs_from_slack' in self.bot_features:
             self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
-        if 'update_dependencies' in config["bot_features"]:
+        if 'update_dependencies' in self.bot_features:
             self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
-        if 'generate_changelogs' in config["bot_features"]:
+        if 'generate_changelogs' in self.bot_features:
             self.changelogger = ChangelogGenerator(
                 self.github, self.slack, self.dispatcher, 'Lex-2008')
-        if 'map_packages' in config["bot_features"]:
+        if 'map_packages' in self.bot_features:
             self.package_mapper = PackageMapper(
                 self.github, self.slack, self.dispatcher, 'Lex-2008')
-        if 'tag_builds' in config["bot_features"]:
+        if 'tag_builds' in self.bot_features:
             self.tagger = Tagger(self.github, self.slack, self.dispatcher, 'Lex-2008')
 
     def post(self, path, data, msg=None):
