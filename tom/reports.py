@@ -16,7 +16,7 @@ class Reports():
         if not self._prs:
             log.info("Nothing to report - skipping dump")
             return
-        os.makedirs("reports/", exist_ok=True)
+        os.makedirs(self.directory, exist_ok=True)
 
         log.info("PRs for reports: " + str(len(self._prs)))
         all = []
