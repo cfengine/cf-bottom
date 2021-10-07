@@ -104,6 +104,7 @@ class Bot():
             self.comment(pr, comment)
 
     def leave_review(self, pr):
+        tom = self.username
         if tom in pr.maintainers and tom not in pr.denials + pr.approvals:
             for person in pr.approvals:
                 if person in pr.maintainers:
