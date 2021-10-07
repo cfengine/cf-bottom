@@ -13,9 +13,9 @@ def read_json(path):
     return data
 
 
-def write_json(data, path):
+def write_json(data, path, prettify=True):
     with open(path, "w") as f:
-        f.write(pretty(data))
+        f.write(pretty(data) if prettify else json.dumps(data))
 
 
 def confirmation(msg):
