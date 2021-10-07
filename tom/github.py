@@ -397,6 +397,7 @@ class PR():
         self.title = data["title"]
         self.number = data["number"]
         self.api_url = data["url"]
+        self.url = data["html_url"]
         self.commits_url = data["commits_url"]
         self.reviews_url = self.api_url + "/reviews"
         self.requested_reviewers = data["requested_reviewers"]
