@@ -29,11 +29,11 @@ class Reports():
             data["created"] = str(pr.created)
             data["author"] = pr.author
             all.append(data)
-            if datetime.datetime.now() - pr.created < datetime.timedelta(days=14):
+            if datetime.datetime.now() - pr.created < datetime.timedelta(days=21):
                 continue
-            old.append(data)
-            if pr.author == "dependabot":
+            if pr.author == "dependabot[bot]":
                 dependabot.append(data)
+            old.append(data)
         def save_to_file(prs, path):
             # Limit to prevent too big files for reporting
             # Need to adjust policy to not report whole file as 1 variable
