@@ -61,7 +61,7 @@
       }
     },
     {
-      "username": "mender-bottom",
+      "username": "mender-test-bot",
       "secrets": "mender-secrets.json",
       "bot_features": ["report_open_prs"],
       "orgs": [ "mendersoftware" ]
