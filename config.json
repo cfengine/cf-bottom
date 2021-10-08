@@ -63,10 +63,7 @@
     {
       "username": "mender-bottom",
       "secrets": "mender-secrets.json",
-      "bot_features": ["dependabot_open_prs", "email_check"],
-      "banned_emails": {
-        "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
-      },
+      "bot_features": ["report_open_prs"],
       "orgs": [ "mendersoftware" ]
     }
   ]
