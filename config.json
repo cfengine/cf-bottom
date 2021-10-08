@@ -21,6 +21,7 @@
       "bot_features": [
         "check_commit_emails",
         "ping_reviewers",
+        "trigger_jenkins_from_gh_comments",
         "approve_prs",
         "report_open_prs",
         "create_prs_from_slack",

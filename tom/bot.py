@@ -241,14 +241,16 @@ class Bot():
 
     def handle_pr(self, pr):
         url = pr["url"].replace("https://api.github.com/repos/", "")
-        log.info("Looking at: {} ({})".format(pr["title"], url))
+        log.info("Looking at: {} ({})".format(pr["title"], pr["html_url"]))
 
         pr = PR(pr, self.github)
-        self.find_reviewers(pr)
         if "ping_reviewers" in self.bot_features:
+            self.find_reviewers(pr)
             self.ping_reviewer(pr)
-        self.review(pr)
-        self.handle_comments(pr)
+        if ("check_commit_emails" in self.bot_features or "approve_prs" in self.bot_features):
+            self.review(pr)
+        if "trigger_jenkins_from_gh_comments" in self.bot_features:
+            self.handle_comments(pr)
 
         if "report_open_prs" in self.bot_features:
             self.reports.log_pr(pr)
