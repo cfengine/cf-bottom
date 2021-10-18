@@ -452,14 +452,9 @@ class PR():
                 log.info("Found related PR in {}: #{}".format(repo, repo_pr))
                 self.merge_with[repo] = repo_pr
 
-        self.reviews = self.github.get(self.reviews_url)
-        self.approvals = []
-        self.denials = []
-        for r in self.reviews:
-            if r["state"] == "APPROVED":
-                self.approvals.append(r["user"]["login"])
-            elif r["state"] == "CHANGES_REQUESTED":
-                self.denials.append(r["user"]["login"])
+        self._reviews = None
+        self._approvals = None
+        self._denials = None
 
         self.commits = self.github.get(self.commits_url)
         self.emails = []
@@ -479,6 +474,30 @@ class PR():
         # This overwrites for every PR, intentionally, it is just used for
         # easier prototyping/development
         write_json(self.data, "tmp_pr.json")
+
+    @property
+    def reviews(self):
+        if self._reviews is None:
+            self._reviews = self.github.get(self.reviews_url)
+        return self._reviews
+
+    @property
+    def approvals(self):
+        if self._approvals is None:
+            self._approvals = []
+            for r in self.reviews:
+                if r["state"] == "APPROVED":
+                    self.approvals.append(r["user"]["login"])
+        return self._approvals
+
+    @property
+    def denials(self):
+        if self._denials is None:
+            self._denials = []
+            for r in self.reviews:
+                if r["state"] == "CHANGES_REQUESTED":
+                    self.denials.append(r["user"]["login"])
+        return self._denials
 
     def has_label(self, label_name):
         label_name = label_name.lower()
