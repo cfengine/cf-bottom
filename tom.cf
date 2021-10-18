@@ -34,7 +34,7 @@ bundle agent tom_repo_init
 {
     vars:
         "tom_dir" string => "/home/tom/self";
-        "remote_args" string => "add origin https://github.com/cf-bottom/self.git";
+        "remote_args" string => "add origin https://github.com/cfengine/cf-bottom.git";
     files:
         "/home/tom/self/."
             create => "true",
