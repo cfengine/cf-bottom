@@ -29,6 +29,9 @@ class Jenkins():
         self.trigger_url = "{}buildWithParameters/api/json".format(self.job_url)
 
     def post(self, path, data):
+        if os.getenv("TOM") == "PASSIVE":
+            print("Would post: " + path)
+            return None
         r = requests.post(path, data=data, headers=self.headers, auth=self.auth)
         if not (200 <= r.status_code < 300):
             log.error("Unexpected HTTP response from Jenkins: {}".format(r.status_code))

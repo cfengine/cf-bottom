@@ -70,7 +70,9 @@ class Bot():
             msg += "Data: {}".format(data)
             if not confirmation(msg):
                 return False
-        self.github.post(path, data)
+        r = self.github.post(path, data)
+        if r is None:
+            return False
         return True
 
     def comment(self, pr, message):
@@ -112,8 +114,9 @@ class Bot():
                     body = "I trust @{}, approved!".format(person)
                     event = "APPROVE"
                     data = {"body": body, "event": event}
-                    self.post(pr.reviews_url, data)
-                    print("Approved PR: {}".format(pr.title))
+                    r = self.post(pr.reviews_url, data)
+                    if r is not None:
+                        print("Approved PR: {}".format(pr.title))
                     return
 
     def check_emails(self, pr):
@@ -133,8 +136,9 @@ class Bot():
             body = f"Please use a company e-mail instead of {bad_emails}"
             event = "REQUEST_CHANGES"
             data = {"body": body, "event": event}
-            self.post(pr.reviews_url, data)
-            print("Denied PR: {}".format(pr.title))
+            r = self.post(pr.reviews_url, data)
+            if r is not None:
+                print("Denied PR: {}".format(pr.title))
             return False
         return True
 

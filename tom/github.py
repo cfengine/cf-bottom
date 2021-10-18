@@ -56,6 +56,9 @@ class GitHub():
             f.write(msg + "\n")
 
     def post(self, path, data, check_status_code=True):
+        if os.getenv("TOM") == "PASSIVE":
+            print("Would post: " + path)
+            return None
         self.api_log("POST {} {}".format(path, data))
         path = self.path(path)
         r = requests.post(path, headers=self.headers, json=data)
