@@ -456,20 +456,9 @@ class PR():
         self._approvals = None
         self._denials = None
 
-        self.commits = self.github.get(self.commits_url)
-        self.emails = []
-        self.commit_messages = []
-        for c in self.commits:
-            self.emails.append(c["commit"]["author"]["email"])
-            self.emails.append(c["commit"]["committer"]["email"])
-            self.commit_messages.append(c["commit"]["message"])
-
-        for message in self.commit_messages:
-            pattern = re.compile("[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
-            email_matches = pattern.findall(message)
-            self.emails.extend(email_matches)
-
-        self.emails = set(self.emails)
+        self._commits = None
+        self._emails = None
+        self._commit_messages = None
 
         # This overwrites for every PR, intentionally, it is just used for
         # easier prototyping/development
@@ -498,6 +487,38 @@ class PR():
                 if r["state"] == "CHANGES_REQUESTED":
                     self.denials.append(r["user"]["login"])
         return self._denials
+
+    @property
+    def commits(self):
+        if self._commits is None:
+            self._commits = self.github.get(self.commits_url)
+        return self._commits
+
+    @property
+    def commit_messages(self):
+        if self._commit_messages is None:
+            self._commit_messages = []
+            for c in self.commits:
+                self.commit_messages.append(c["commit"]["message"])
+        return self._commit_messages
+
+    @property
+    def emails(self):
+        if self._emails is not None:
+            return self._emails
+
+        self._emails = []
+        for c in self.commits:
+            self._emails.append(c["commit"]["author"]["email"])
+            self._emails.append(c["commit"]["committer"]["email"])
+
+        for message in self.commit_messages:
+            pattern = re.compile("[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
+            email_matches = pattern.findall(message)
+            self._emails.extend(email_matches)
+
+        self._emails = set(self._emails)
+        return self._emails
 
     def has_label(self, label_name):
         label_name = label_name.lower()
