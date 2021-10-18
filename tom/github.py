@@ -413,7 +413,6 @@ class PR():
         if "labels" in data:
             self.labels = [label["name"].lower() for label in data["labels"]]
 
-        self.comments = Comments(self.github.get(self.comments_url), github)
         if "body" in data and data["body"]:
             self.body = data["body"].lower()
         else:
@@ -452,6 +451,8 @@ class PR():
                 log.info("Found related PR in {}: #{}".format(repo, repo_pr))
                 self.merge_with[repo] = repo_pr
 
+        self._comments = None
+
         self._reviews = None
         self._approvals = None
         self._denials = None
@@ -463,6 +464,12 @@ class PR():
         # This overwrites for every PR, intentionally, it is just used for
         # easier prototyping/development
         write_json(self.data, "tmp_pr.json")
+
+    @property
+    def comments(self):
+        if self._comments is None:
+            self._comments = Comments(self.github.get(self.comments_url), self.github)
+        return self._comments
 
     @property
     def reviews(self):
