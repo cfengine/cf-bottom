@@ -389,6 +389,10 @@ class PR():
         self.data = data  # JSON dict from GitHub API
         self.github = github  # GitHub object with http methods and credentials
 
+        # This overwrites for every PR, intentionally, it is just used for
+        # easier prototyping/development
+        write_json(self.data, "tmp_pr.json")
+
         self.comments_url = data["comments_url"]  # POST comments to this URL
         self.author = data["user"]["login"]  # PR Author / Submitter
         self.repo = data["base"]["repo"]["full_name"]  # cfengine/core
@@ -451,6 +455,10 @@ class PR():
                 log.info("Found related PR in {}: #{}".format(repo, repo_pr))
                 self.merge_with[repo] = repo_pr
 
+        # All of these require extra API requests, and will be completed
+        # by the @property getter functions below only when necessary.
+        # (The bot can be configured with more or less features in config.json)
+
         self._comments = None
 
         self._reviews = None
@@ -460,10 +468,6 @@ class PR():
         self._commits = None
         self._emails = None
         self._commit_messages = None
-
-        # This overwrites for every PR, intentionally, it is just used for
-        # easier prototyping/development
-        write_json(self.data, "tmp_pr.json")
 
     @property
     def comments(self):
