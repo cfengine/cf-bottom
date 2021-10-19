@@ -3,6 +3,7 @@ from time import sleep
 import requests
 from requests.auth import HTTPBasicAuth
 from tom.utils import pretty
+import os
 
 
 class Jenkins():
