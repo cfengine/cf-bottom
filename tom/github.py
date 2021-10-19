@@ -10,6 +10,8 @@ from copy import copy
 
 from tom.utils import pretty, write_json
 
+# Global constant, reused many times for finding emails in comments:
+_EMAIL_REGEX = re.compile(r"[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
 
 class GitHub():
     def __init__(self, token, user_agent, known_repos):
@@ -524,8 +526,7 @@ class PR():
             self._emails.append(c["commit"]["committer"]["email"])
 
         for message in self.commit_messages:
-            pattern = re.compile("[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
-            email_matches = pattern.findall(message)
+            email_matches = _EMAIL_REGEX.findall(message)
             self._emails.extend(email_matches)
 
         self._emails = set(self._emails)
