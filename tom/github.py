@@ -10,6 +10,8 @@ from copy import copy
 
 from tom.utils import pretty, write_json
 
+# Global constant, reused many times for finding emails in comments:
+_EMAIL_REGEX = re.compile(r"[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
 
 class GitHub():
     def __init__(self, token, user_agent, known_repos):
@@ -56,6 +58,9 @@ class GitHub():
             f.write(msg + "\n")
 
     def post(self, path, data, check_status_code=True):
+        if os.getenv("TOM") == "PASSIVE":
+            print("Would post: " + path)
+            return None
         self.api_log("POST {} {}".format(path, data))
         path = self.path(path)
         r = requests.post(path, headers=self.headers, json=data)
@@ -386,6 +391,10 @@ class PR():
         self.data = data  # JSON dict from GitHub API
         self.github = github  # GitHub object with http methods and credentials
 
+        # This overwrites for every PR, intentionally, it is just used for
+        # easier prototyping/development
+        write_json(self.data, "tmp_pr.json")
+
         self.comments_url = data["comments_url"]  # POST comments to this URL
         self.author = data["user"]["login"]  # PR Author / Submitter
         self.repo = data["base"]["repo"]["full_name"]  # cfengine/core
@@ -410,7 +419,6 @@ class PR():
         if "labels" in data:
             self.labels = [label["name"].lower() for label in data["labels"]]
 
-        self.comments = Comments(self.github.get(self.comments_url), github)
         if "body" in data and data["body"]:
             self.body = data["body"].lower()
         else:
@@ -449,33 +457,80 @@ class PR():
                 log.info("Found related PR in {}: #{}".format(repo, repo_pr))
                 self.merge_with[repo] = repo_pr
 
-        self.reviews = self.github.get(self.reviews_url)
-        self.approvals = []
-        self.denials = []
-        for r in self.reviews:
-            if r["state"] == "APPROVED":
-                self.approvals.append(r["user"]["login"])
-            elif r["state"] == "CHANGES_REQUESTED":
-                self.denials.append(r["user"]["login"])
+        # All of these require extra API requests, and will be completed
+        # by the @property getter functions below only when necessary.
+        # (The bot can be configured with more or less features in config.json)
 
-        self.commits = self.github.get(self.commits_url)
-        self.emails = []
-        self.commit_messages = []
+        self._comments = None
+
+        self._reviews = None
+        self._approvals = None
+        self._denials = None
+
+        self._commits = None
+        self._emails = None
+        self._commit_messages = None
+
+    @property
+    def comments(self):
+        if self._comments is None:
+            self._comments = Comments(self.github.get(self.comments_url), self.github)
+        return self._comments
+
+    @property
+    def reviews(self):
+        if self._reviews is None:
+            self._reviews = self.github.get(self.reviews_url)
+        return self._reviews
+
+    @property
+    def approvals(self):
+        if self._approvals is None:
+            self._approvals = []
+            for r in self.reviews:
+                if r["state"] == "APPROVED":
+                    self.approvals.append(r["user"]["login"])
+        return self._approvals
+
+    @property
+    def denials(self):
+        if self._denials is None:
+            self._denials = []
+            for r in self.reviews:
+                if r["state"] == "CHANGES_REQUESTED":
+                    self.denials.append(r["user"]["login"])
+        return self._denials
+
+    @property
+    def commits(self):
+        if self._commits is None:
+            self._commits = self.github.get(self.commits_url)
+        return self._commits
+
+    @property
+    def commit_messages(self):
+        if self._commit_messages is None:
+            self._commit_messages = []
+            for c in self.commits:
+                self.commit_messages.append(c["commit"]["message"])
+        return self._commit_messages
+
+    @property
+    def emails(self):
+        if self._emails is not None:
+            return self._emails
+
+        self._emails = []
         for c in self.commits:
-            self.emails.append(c["commit"]["author"]["email"])
-            self.emails.append(c["commit"]["committer"]["email"])
-            self.commit_messages.append(c["commit"]["message"])
+            self._emails.append(c["commit"]["author"]["email"])
+            self._emails.append(c["commit"]["committer"]["email"])
 
         for message in self.commit_messages:
-            pattern = re.compile("[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
-            email_matches = pattern.findall(message)
-            self.emails.extend(email_matches)
+            email_matches = _EMAIL_REGEX.findall(message)
+            self._emails.extend(email_matches)
 
-        self.emails = set(self.emails)
-
-        # This overwrites for every PR, intentionally, it is just used for
-        # easier prototyping/development
-        write_json(self.data, "tmp_pr.json")
+        self._emails = set(self._emails)
+        return self._emails
 
     def has_label(self, label_name):
         label_name = label_name.lower()

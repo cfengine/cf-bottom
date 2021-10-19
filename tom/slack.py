@@ -27,6 +27,9 @@ class Slack():
         return 'https://slack.com/api/' + name
 
     def post(self, url, data={}):
+        if os.getenv("TOM") == "PASSIVE":
+            print("Would post: " + url)
+            return None
         if not url.startswith('http'):
             url = self.api(url)
         if not 'token' in data:

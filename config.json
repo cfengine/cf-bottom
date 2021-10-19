@@ -56,7 +56,7 @@
         "cfengine/buildscripts": ["craigcomstock", "Lex-2008"],
         "cfengine/documentation": ["nickanderson", "craigcomstock"],
         "cfengine/contrib": ["nickanderson"],
-        "cf-bottom/self": ["olehermanse", "vpodzime", "cf-bottom"],
+        "cfengine/cf-bottom": ["olehermanse", "vpodzime", "cf-bottom"],
         "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"]
       }
     },
