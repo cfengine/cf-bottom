@@ -181,6 +181,8 @@ class Bot():
         if "exotic" in comment:
             exotics = True
             description = "(with exotics)"
+        # flag if docs build is requested
+        docs = pr.short_repo_name.startswith('documentation')
 
         if self.interactive:
             msg = []
@@ -192,7 +194,7 @@ class Bot():
             if not confirmation(msg):
                 return
 
-        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author)
+        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author, docs)
 
         queue_url = headers["Location"]
 
