@@ -41,7 +41,7 @@ class Jenkins():
         except:
             return r.headers, r.text
 
-    def trigger(self, prs=None, branch="master", title=None, exotics=False, user=None):
+    def trigger(self, prs: dict[str, int] = None, branch="master", title=None, exotics=False, user=None):
         path = self.trigger_url
         params = {}
         branches = ["{}#{}".format(r, p) for r, p in prs.items()]

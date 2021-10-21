@@ -5,7 +5,7 @@ import datetime
 import logging as log
 from copy import copy
 
-from tom.github import GitHub, GitHubInterface, PR
+from tom.github import GitHub, GitHubInterface, PR, Comment
 from tom.jenkins import Jenkins
 from tom.slack import Slack, CommandDispatcher
 from tom.dependencies import UpdateChecker
@@ -170,8 +170,8 @@ class Bot():
             response, badge, badge_text, url, packages)
         self.comment(pr, new_comment)
 
-    def trigger_build(self, pr, comment):
-        prs = {}
+    def trigger_build(self, pr: PR, comment):
+        prs: dict[str, int] = {}
         prs[pr.short_repo_name] = pr.number
         for repo_name in pr.merge_with:
             if repo_name not in prs:
