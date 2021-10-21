@@ -168,6 +168,9 @@ class Bot():
         packages = "{}/packages/testing-pr/jenkins-pr-pipeline-{}/".format(buildcache, num)
         new_comment = "{}, I triggered a build:\n\n{}{}\n\n**Jenkins:** {}\n\n**Packages:** {}".format(
             response, badge, badge_text, url, packages)
+        if pr.short_repo_name.startswith('documentation'):
+            docs = "{}/packages/build-documentation-pr/jenkins-pr-pipeline-{}/output/_site/".format(buildcache, num)
+            new_comment += "\n\n**Documentation:** {}".format(docs)
         self.comment(pr, new_comment)
 
     def trigger_build(self, pr: PR, comment):
