@@ -5,7 +5,7 @@ import datetime
 import logging as log
 from copy import copy
 
-from tom.github import GitHub, GitHubInterface, PR
+from tom.github import GitHub, GitHubInterface, PR, Comment
 from tom.jenkins import Jenkins
 from tom.slack import Slack, CommandDispatcher
 from tom.dependencies import UpdateChecker
@@ -172,10 +172,13 @@ class Bot():
         packages = "{}/packages/testing-pr/jenkins-pr-pipeline-{}/".format(buildcache, num)
         new_comment = "{}, I triggered a build:\n\n{}{}\n\n**Jenkins:** {}\n\n**Packages:** {}".format(
             response, badge, badge_text, url, packages)
+        if pr.short_repo_name.startswith('documentation'):
+            docs = "{}/packages/build-documentation-pr/jenkins-pr-pipeline-{}/output/_site/".format(buildcache, num)
+            new_comment += "\n\n**Documentation:** {}".format(docs)
         self.comment(pr, new_comment)
 
-    def trigger_build(self, pr, comment):
-        prs = {}
+    def trigger_build(self, pr: PR, comment):
+        prs: dict[str, int] = {}
         prs[pr.short_repo_name] = pr.number
         for repo_name in pr.merge_with:
             if repo_name not in prs:
@@ -185,6 +188,8 @@ class Bot():
         if "exotic" in comment:
             exotics = True
             description = "(with exotics)"
+        # flag if docs build is requested
+        docs = pr.short_repo_name.startswith('documentation')
 
         if self.interactive:
             msg = []
@@ -196,7 +201,7 @@ class Bot():
             if not confirmation(msg):
                 return
 
-        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author)
+        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author, docs)
 
         queue_url = headers["Location"]
 
