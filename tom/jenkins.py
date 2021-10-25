@@ -4,6 +4,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 from tom.utils import pretty
 import os
+from typing import Dict
 
 
 class Jenkins():
@@ -45,7 +46,7 @@ class Jenkins():
         except:
             return r.headers, r.text
 
-    def trigger(self, prs: dict[str, int] = None, branch="master", title=None, exotics=False, user=None, docs=False):
+    def trigger(self, prs: Dict[str, int] = None, branch="master", title=None, exotics=False, user=None, docs=False):
         path = self.trigger_url
         params = {}
         branches = ["{}#{}".format(r, p) for r, p in prs.items()]
