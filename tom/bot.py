@@ -4,6 +4,7 @@ import json
 import datetime
 import logging as log
 from copy import copy
+from typing import Dict
 
 from tom.github import GitHub, GitHubInterface, PR, Comment
 from tom.jenkins import Jenkins
@@ -178,7 +179,7 @@ class Bot():
         self.comment(pr, new_comment)
 
     def trigger_build(self, pr: PR, comment):
-        prs: dict[str, int] = {}
+        prs: Dict[str, int] = {}
         prs[pr.short_repo_name] = pr.number
         for repo_name in pr.merge_with:
             if repo_name not in prs:
