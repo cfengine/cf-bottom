@@ -12,8 +12,7 @@
         "aleksandrychev",
         "oleorhagen",
         "lluiscampos",
-        "larsewi",
-        "KotzaBoss"
+        "larsewi"
       ],
       "reviewers": ["olehermanse", "vpodzime"],
       "jenkins": "https://ci.cfengine.com/",
