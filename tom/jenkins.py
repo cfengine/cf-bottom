@@ -46,7 +46,7 @@ class Jenkins():
         except:
             return r.headers, r.text
 
-    def trigger(self, prs: Dict[str, int] = None, branch="master", title=None, exotics=False, user=None, docs=False):
+    def trigger(self, prs: Dict[str, int] = None, branch="master", title=None, exotics=False, user=None, docs=False, no_tests=False):
         path = self.trigger_url
         params = {}
         branches = ["{}#{}".format(r, p) for r, p in prs.items()]
@@ -71,6 +71,9 @@ class Jenkins():
             description = "Unnamed build ({})".format(user)
         if exotics:
             description += " - WITH EXOTICS"
+        if no_tests:
+            params["NO_TESTS"] = True
+            description += " [NO TESTS]"
         params["BUILD_DESC"] = description
         if docs:
             # building documentation

@@ -192,17 +192,23 @@ class Bot():
         # flag if docs build is requested
         docs = pr.short_repo_name.startswith('documentation')
 
+        no_tests = "no tests" in comment.lower()
+        if no_tests:
+            description += " [NO TESTS]"
+
         if self.interactive:
             msg = []
             msg.append(str(comment))
             msg.append("Triger build for: {}".format(pr.title))
             msg.append("PRs: {}".format(prs))
             msg.append("EXOTICS: {}".format(exotics))
+            msg.append("NO_TESTS: {}".format(no_tests))
             msg = "\n".join(msg)
             if not confirmation(msg):
                 return
 
-        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author, docs)
+        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author,
+                                             docs, no_tests)
 
         queue_url = headers["Location"]
 
