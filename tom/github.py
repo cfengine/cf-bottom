@@ -365,7 +365,7 @@ class Comment():
         return "{}: {}".format(self.author, self.body)
 
     def __contains__(self, value):
-        return value in self.body
+        return value in self.body.lower()
 
 
 class Comments():
