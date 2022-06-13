@@ -1,0 +1,1 @@
+pytest --show-capture=all

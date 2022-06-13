@@ -32,8 +32,9 @@ class Jenkins:
 
     def post(self, path, data):
         if os.getenv("TOM") == "PASSIVE":
-            print("Would post: " + path)
-            return None
+            r = { "path": path, "data": data }
+            print("Would post {}".format(r))
+            return r
         r = requests.post(path, data=data, headers=self.headers, auth=self.auth)
         if not (200 <= r.status_code < 300):
             log.error("Unexpected HTTP response from Jenkins: {}".format(r.status_code))
