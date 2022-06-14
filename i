@@ -1,1 +1,1 @@
-pytest --show-capture=all -vv
+python3 -m pytest --show-capture=all -vv
