@@ -115,6 +115,8 @@ class Jenkins:
             ):
                 path = path.replace("build-", "fast-build-")
                 del params["BASE_BRANCH"]
+                # fast build is focused on documentation repo which doesn't use .x in base branch names
+                params["BUILD_DESC"] = params["BUILD_DESC"].replace(".x", "")
         return path, params
 
     def wait_for_queue(self, url):

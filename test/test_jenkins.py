@@ -54,6 +54,23 @@ def test_slow_docs_build():
     assert expected == params
 
 
+def test_fast_docs_build_318():
+    _data = copy.deepcopy(data)
+    _data["prs"] = {"documentation": 43}
+    _data["pr"]["base_branch"] = "3.18.x"
+    (path, params) = build_path_and_params(_data)
+    print(params)
+    assert (
+        path
+        == "https://ci.cfengine.com/job/fast-build-and-deploy-docs-3.18/buildWithParameters/api/json"
+    )
+    expected = {
+        "BUILD_DESC": "test-pr-title @test-author (documentation#43 3.18)",
+        "DOCS_REV": "43",
+    }
+    assert expected == params
+
+
 def test_fast_docs_build():
     _data = copy.deepcopy(data)
     _data["prs"] = {"documentation": 43}
