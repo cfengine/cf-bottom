@@ -83,6 +83,9 @@ class Jenkins:
                 param_name = param_name.replace("DOCUMENTATION", "DOCS")
                 param_name = param_name.replace("GENERATOR", "GEN")
                 params[param_name] = str(prs[repo])
+        if "master" not in branch:
+            if ".x" not in branch:
+                branch = branch + ".x"
         params["BASE_BRANCH"] = str(branch)
         if not user:
             user = self.username
@@ -100,7 +103,8 @@ class Jenkins:
         params["BUILD_DESC"] = description
         if "documentation" in prs:
             path = path.replace(
-                "pr-pipeline", "build-and-deploy-docs-{}".format(branch)
+                "pr-pipeline",
+                "build-and-deploy-docs-{}".format(branch.replace(".x", "")),
             )
             # TODO need to handle branch being 3.15 style from documentation versus 3.15.x style from everywhere else
             if not (

@@ -17,6 +17,25 @@ data = {
 
 
 # TODO test_docs_build_315 and 318, pr:base_branch = 3.15.x or 3.18.x ,etc
+def test_slow_docs_315_build():
+    _data = copy.deepcopy(data)
+    _data["prs"] = {"core": 42, "documentation": 43}
+    _data["pr"]["base_branch"] = "3.15.x"
+    (path, params) = build_path_and_params(_data)
+    print(params)
+    assert (
+        path
+        == "https://ci.cfengine.com/job/build-and-deploy-docs-3.15/buildWithParameters/api/json"
+    )
+    expected = {
+        "BUILD_DESC": "test-pr-title @test-author (core#42 documentation#43 3.15.x)",
+        "DOCS_REV": "43",
+        "CORE_REV": "42",
+        "BASE_BRANCH": "3.15.x",
+    }
+    assert expected == params
+
+
 def test_slow_docs_build():
     _data = copy.deepcopy(data)
     _data["prs"] = {"core": 42, "documentation": 43}
