@@ -16,14 +16,14 @@ data = {
     "exotics": False,
 }
 
+
 def test_docs_build():
     _data = copy.deepcopy(data)
     _data["docs"] = True
     (path, params) = build_path_and_params(_data)
     print(params)
     assert (
-        path
-        == "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json"
+        path == "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json"
     )
     expected = {
         "CORE_REV": "42",
@@ -37,16 +37,16 @@ def test_docs_build():
         "NO_DEPLOYMENT_TESTS": True,
         "NO_FR_TESTS": True,
         "NO_STATIC_CHECKS": True,
-        "CONFIGURATIONS_FILTER": "label == \"PACKAGES_HUB_x86_64_linux_ubuntu_16\""
+        "CONFIGURATIONS_FILTER": 'label == "PACKAGES_HUB_x86_64_linux_ubuntu_16"',
     }
     assert expected == params
+
 
 def test_default_build():
     print(data)
     (path, params) = build_path_and_params(data)
     assert (
-        path
-        == "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json"
+        path == "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json"
     )
     expected = {
         "CORE_REV": "42",
