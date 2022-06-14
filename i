@@ -1,1 +1,1 @@
-pytest --show-capture=all
+pytest --show-capture=all -vv
