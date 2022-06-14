@@ -54,10 +54,9 @@ class Jenkins:
         title=None,
         exotics=False,
         user=None,
-        docs=False,
         no_tests=False,
     ):
-        path, params = self.build_path_and_params(prs,branch,title,exotics,user,docs,no_tests)
+        path, params = self.build_path_and_params(prs,branch,title,exotics,user,no_tests)
         return self.post(path, params)
 
     def build_path_and_params(
@@ -67,7 +66,6 @@ class Jenkins:
         title=None,
         exotics=False,
         user=None,
-        docs=False,
         no_tests=False,
     ):
         path = self.trigger_url
@@ -98,7 +96,7 @@ class Jenkins:
             params["NO_TESTS"] = True
             description += " [NO TESTS]"
         params["BUILD_DESC"] = description
-        if docs:
+        if "documentation" in prs:
             # building documentation
             if params["BASE_BRANCH"] != "master":
                 params["BASE_BRANCH"] += ".x"

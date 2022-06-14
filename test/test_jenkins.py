@@ -10,7 +10,6 @@ from tom.utils import read_json
 data = {
     "prs": {"core": 42},
     "comment": {"author": "test-author"},
-    "docs": False,
     "no_tests": True,
     "pr": {"base_branch": "master", "title": "test-pr-title"},
     "exotics": False,
@@ -19,21 +18,20 @@ data = {
 
 def test_docs_build():
     _data = copy.deepcopy(data)
-    _data["docs"] = True
+    _data["prs"] = { "documentation": 43 }
     (path, params) = build_path_and_params(_data)
     print(params)
     assert (
         path == "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json"
     )
     expected = {
-        "CORE_REV": "42",
         "BASE_BRANCH": "master",
         "NO_TESTS": True,
         "BUILD_DOCS": True,
         "BUILD_DESC": "test-pr-title @test-author (core#42 master) [NO TESTS]",
         "DOCS_BRANCH": "pr",
         "DOCS_GEN_REV": "master",
-        "DOCS_REV": "master",
+        "DOCS_REV": "43",
         "NO_DEPLOYMENT_TESTS": True,
         "NO_FR_TESTS": True,
         "NO_STATIC_CHECKS": True,
@@ -85,6 +83,5 @@ def build_path_and_params(data):
                 data["pr"]["title"],
                 data["exotics"],
                 data["comment"]["author"],
-                data["docs"],
                 data["no_tests"],
             )
