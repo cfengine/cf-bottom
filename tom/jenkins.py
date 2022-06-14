@@ -7,7 +7,7 @@ import os
 from typing import Dict
 
 
-class Jenkins():
+class Jenkins:
     def __init__(self, url, job, secrets, username):
         self.url = url
 
@@ -46,7 +46,16 @@ class Jenkins():
         except:
             return r.headers, r.text
 
-    def trigger(self, prs: Dict[str, int] = None, branch="master", title=None, exotics=False, user=None, docs=False, no_tests=False):
+    def trigger(
+        self,
+        prs: Dict[str, int] = None,
+        branch="master",
+        title=None,
+        exotics=False,
+        user=None,
+        docs=False,
+        no_tests=False,
+    ):
         path = self.trigger_url
         params = {}
         branches = ["{}#{}".format(r, p) for r, p in prs.items()]
@@ -57,8 +66,8 @@ class Jenkins():
                 param_name = repo.upper().replace("-", "_")
                 assert " " not in param_name
                 param_name = param_name + "_REV"
-                param_name = param_name.replace('DOCUMENTATION', 'DOCS')
-                param_name = param_name.replace('GENERATOR', 'GEN')
+                param_name = param_name.replace("DOCUMENTATION", "DOCS")
+                param_name = param_name.replace("GENERATOR", "GEN")
                 params[param_name] = str(prs[repo])
         params["BASE_BRANCH"] = str(branch)
         if not user:
@@ -77,19 +86,21 @@ class Jenkins():
         params["BUILD_DESC"] = description
         if docs:
             # building documentation
-            if params["BASE_BRANCH"] != 'master':
-                params["BASE_BRANCH"] += '.x'
-            if 'DOCS_REV' not in params:
-                params['DOCS_REV'] = str(branch)
-            if 'DOCS_GEN_REV' not in params:
-                params['DOCS_GEN_REV'] = str(branch)
-            params['BUILD_DOCS'] = True
-            params['DOCS_BRANCH'] = 'pr'
-            params['NO_TESTS'] = True
-            params['NO_DEPLOYMENT_TESTS'] = True
-            params['NO_FR_TESTS'] = True
-            params['NO_STATIC_CHECKS'] = True
-            params['CONFIGURATIONS_FILTER'] = 'label == "PACKAGES_HUB_x86_64_linux_ubuntu_16"'
+            if params["BASE_BRANCH"] != "master":
+                params["BASE_BRANCH"] += ".x"
+            if "DOCS_REV" not in params:
+                params["DOCS_REV"] = str(branch)
+            if "DOCS_GEN_REV" not in params:
+                params["DOCS_GEN_REV"] = str(branch)
+            params["BUILD_DOCS"] = True
+            params["DOCS_BRANCH"] = "pr"
+            params["NO_TESTS"] = True
+            params["NO_DEPLOYMENT_TESTS"] = True
+            params["NO_FR_TESTS"] = True
+            params["NO_STATIC_CHECKS"] = True
+            params[
+                "CONFIGURATIONS_FILTER"
+            ] = 'label == "PACKAGES_HUB_x86_64_linux_ubuntu_16"'
         return self.post(path, params)
 
     def wait_for_queue(self, url):

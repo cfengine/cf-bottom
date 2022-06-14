@@ -59,7 +59,9 @@ def run_all_bots(directory, interactive):
         if not secrets_data:
             log.warning(
                 "Skipping bot '{}', secrets file '{}' not found".format(
-                    bot_data["username"], bot_data["secrets_path"]))
+                    bot_data["username"], bot_data["secrets_path"]
+                )
+            )
             continue
 
         run_bot(directory, interactive, bot_data, reports)
@@ -70,23 +72,31 @@ def run_all_bots(directory, interactive):
 
 
 def get_args():
-    argparser = argparse.ArgumentParser(description='CFEngine Bot, Tom')
+    argparser = argparse.ArgumentParser(description="CFEngine Bot, Tom")
     argparser.add_argument(
-            '--interactive', '-i', help=('Assume user present at terminal: '+
-                'in normal mode ask first, shoot questions later; '+
-                'in talk mode - talk to the user, not to the server'), action="store_true")
+        "--interactive",
+        "-i",
+        help=(
+            "Assume user present at terminal: "
+            + "in normal mode ask first, shoot questions later; "
+            + "in talk mode - talk to the user, not to the server"
+        ),
+        action="store_true",
+    )
     argparser.add_argument(
-        '--directory',
-        '-d',
-        help='Directory to use for config, secrets and logs',
+        "--directory",
+        "-d",
+        help="Directory to use for config, secrets and logs",
         default="./",
-        type=str)
+        type=str,
+    )
     argparser.add_argument(
-        '--talk-user',
-        '-t',
+        "--talk-user",
+        "-t",
         help="Run Tom in talk mode, when it reads Slack message from stdin",
-        type=str)
-    argparser.add_argument('--log-level', '-l', help="Detail of log output", type=str)
+        type=str,
+    )
+    argparser.add_argument("--log-level", "-l", help="Detail of log output", type=str)
     args = argparser.parse_args()
 
     return args
