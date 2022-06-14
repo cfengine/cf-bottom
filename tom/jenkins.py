@@ -97,22 +97,11 @@ class Jenkins:
             description += " [NO TESTS]"
         params["BUILD_DESC"] = description
         if "documentation" in prs:
-            # building documentation
-            if params["BASE_BRANCH"] != "master":
-                params["BASE_BRANCH"] += ".x"
-            if "DOCS_REV" not in params:
-                params["DOCS_REV"] = str(branch)
-            if "DOCS_GEN_REV" not in params:
-                params["DOCS_GEN_REV"] = str(branch)
-            params["BUILD_DOCS"] = True
-            params["DOCS_BRANCH"] = "pr"
-            params["NO_TESTS"] = True
-            params["NO_DEPLOYMENT_TESTS"] = True
-            params["NO_FR_TESTS"] = True
-            params["NO_STATIC_CHECKS"] = True
-            params[
-                "CONFIGURATIONS_FILTER"
-            ] = 'label == "PACKAGES_HUB_x86_64_linux_ubuntu_16"'
+            path = path.replace("pr-pipeline","build-and-deploy-docs-{}".format(branch))
+            # TODO need to handle branch being 3.15 style from documentation versus 3.15.x style from everywhere else
+            if not("core" in prs or "enterprise" in prs or "nova" in prs or "masterfiles" in prs):
+              path = path.replace("build-","fast-build-")
+              del params["BASE_BRANCH"]
         return path, params
 
     def wait_for_queue(self, url):

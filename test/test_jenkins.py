@@ -10,32 +10,40 @@ from tom.utils import read_json
 data = {
     "prs": {"core": 42},
     "comment": {"author": "test-author"},
-    "no_tests": True,
+    "no_tests": False,
     "pr": {"base_branch": "master", "title": "test-pr-title"},
     "exotics": False,
 }
 
 
-def test_docs_build():
+# TODO test_docs_build_315 and 318, pr:base_branch = 3.15.x or 3.18.x ,etc
+def test_slow_docs_build():
+    _data = copy.deepcopy(data)
+    _data["prs"] = { "core": 42, "documentation": 43 }
+    (path, params) = build_path_and_params(_data)
+    print(params)
+    assert (
+        path == "https://ci.cfengine.com/job/build-and-deploy-docs-master/buildWithParameters/api/json"
+    )
+    expected = {
+        "BUILD_DESC": "test-pr-title @test-author (core#42 documentation#43 master)",
+        "DOCS_REV": "43",
+        "CORE_REV": "42",
+        "BASE_BRANCH": "master",
+    }
+    assert expected == params
+
+def test_fast_docs_build():
     _data = copy.deepcopy(data)
     _data["prs"] = { "documentation": 43 }
     (path, params) = build_path_and_params(_data)
     print(params)
     assert (
-        path == "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json"
+        path == "https://ci.cfengine.com/job/fast-build-and-deploy-docs-master/buildWithParameters/api/json"
     )
     expected = {
-        "BASE_BRANCH": "master",
-        "NO_TESTS": True,
-        "BUILD_DOCS": True,
-        "BUILD_DESC": "test-pr-title @test-author (documentation#43 master) [NO TESTS]",
-        "DOCS_BRANCH": "pr",
-        "DOCS_GEN_REV": "master",
+        "BUILD_DESC": "test-pr-title @test-author (documentation#43 master)",
         "DOCS_REV": "43",
-        "NO_DEPLOYMENT_TESTS": True,
-        "NO_FR_TESTS": True,
-        "NO_STATIC_CHECKS": True,
-        "CONFIGURATIONS_FILTER": 'label == "PACKAGES_HUB_x86_64_linux_ubuntu_16"',
     }
     assert expected == params
 
@@ -49,8 +57,7 @@ def test_default_build():
     expected = {
         "CORE_REV": "42",
         "BASE_BRANCH": "master",
-        "NO_TESTS": True,
-        "BUILD_DESC": "test-pr-title @test-author (core#42 master) [NO TESTS]",
+        "BUILD_DESC": "test-pr-title @test-author (core#42 master)",
     }
     assert expected == params
 
