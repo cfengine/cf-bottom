@@ -56,7 +56,9 @@ class Jenkins:
         user=None,
         no_tests=False,
     ):
-        path, params = self.build_path_and_params(prs,branch,title,exotics,user,no_tests)
+        path, params = self.build_path_and_params(
+            prs, branch, title, exotics, user, no_tests
+        )
         return self.post(path, params)
 
     def build_path_and_params(
@@ -97,11 +99,18 @@ class Jenkins:
             description += " [NO TESTS]"
         params["BUILD_DESC"] = description
         if "documentation" in prs:
-            path = path.replace("pr-pipeline","build-and-deploy-docs-{}".format(branch))
+            path = path.replace(
+                "pr-pipeline", "build-and-deploy-docs-{}".format(branch)
+            )
             # TODO need to handle branch being 3.15 style from documentation versus 3.15.x style from everywhere else
-            if not("core" in prs or "enterprise" in prs or "nova" in prs or "masterfiles" in prs):
-              path = path.replace("build-","fast-build-")
-              del params["BASE_BRANCH"]
+            if not (
+                "core" in prs
+                or "enterprise" in prs
+                or "nova" in prs
+                or "masterfiles" in prs
+            ):
+                path = path.replace("build-", "fast-build-")
+                del params["BASE_BRANCH"]
         return path, params
 
     def wait_for_queue(self, url):
