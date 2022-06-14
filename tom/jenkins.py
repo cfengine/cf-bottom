@@ -57,6 +57,19 @@ class Jenkins:
         docs=False,
         no_tests=False,
     ):
+        path, params = self.build_path_and_params(prs,branch,title,exotics,user,docs,no_tests)
+        return self.post(path, params)
+
+    def build_path_and_params(
+        self,
+        prs: Dict[str, int] = None,
+        branch="master",
+        title=None,
+        exotics=False,
+        user=None,
+        docs=False,
+        no_tests=False,
+    ):
         path = self.trigger_url
         params = {}
         branches = ["{}#{}".format(r, p) for r, p in prs.items()]
@@ -102,7 +115,7 @@ class Jenkins:
             params[
                 "CONFIGURATIONS_FILTER"
             ] = 'label == "PACKAGES_HUB_x86_64_linux_ubuntu_16"'
-        return self.post(path, params)
+        return path, params
 
     def wait_for_queue(self, url):
         log.debug("Queue URL: {}".format(url))

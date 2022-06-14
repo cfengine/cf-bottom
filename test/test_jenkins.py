@@ -5,7 +5,7 @@ from tom.main import load_config
 from tom.utils import read_json
 
 
-def test_target_baseline():
+def test_build_path_and_params_baseline():
     data = {
         "prs": {"core": 42},
         "comment": {"author": "test-author"},
@@ -14,10 +14,9 @@ def test_target_baseline():
         "pr": {"base_branch": "master", "title": "test-pr-title"},
         "exotics": False,
     }
-    r = trigger(data)
-    print(r)
+    (path, params) = build_path_and_params(data)
     assert (
-        r["path"]
+        path
         == "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json"
     )
     expected = {
@@ -26,10 +25,10 @@ def test_target_baseline():
         "NO_TESTS": True,
         "BUILD_DESC": "test-pr-title @test-author (core#42 master) [NO TESTS]",
     }
-    assert expected == r["data"]
+    assert expected == params
 
 
-def trigger(data):
+def build_path_and_params(data):
     os.environ["TOM"] = "PASSIVE"  # for testing, don't actually post
     # similar to tom/main.py run_all_bots
     directory = Path(os.path.realpath(__file__)).parent.parent.absolute()
@@ -51,7 +50,7 @@ def trigger(data):
                 bot_data["secrets_data"],
                 "cf-bottom",
             )
-            return jenkins.trigger(
+            return jenkins.build_path_and_params(
                 data["prs"],
                 data["pr"]["base_branch"],
                 data["pr"]["title"],
