@@ -32,7 +32,7 @@ class Jenkins:
 
     def post(self, path, data):
         if os.getenv("TOM") == "PASSIVE":
-            r = { "path": path, "data": data }
+            r = {"path": path, "data": data}
             print("Would post {}".format(r))
             return r
         r = requests.post(path, data=data, headers=self.headers, auth=self.auth)
