@@ -28,7 +28,7 @@ def test_docs_build():
         "BASE_BRANCH": "master",
         "NO_TESTS": True,
         "BUILD_DOCS": True,
-        "BUILD_DESC": "test-pr-title @test-author (core#42 master) [NO TESTS]",
+        "BUILD_DESC": "test-pr-title @test-author (documentation#43 master) [NO TESTS]",
         "DOCS_BRANCH": "pr",
         "DOCS_GEN_REV": "master",
         "DOCS_REV": "43",
