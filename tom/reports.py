@@ -4,7 +4,8 @@ import logging as log
 
 from tom.utils import write_json
 
-class Reports():
+
+class Reports:
     def __init__(self, directory):
         self._prs = []
         self.directory = os.path.join(directory, "reports")
@@ -34,12 +35,14 @@ class Reports():
             if pr.author == "dependabot[bot]":
                 dependabot.append(data)
             old.append(data)
+
         def save_to_file(prs, path):
             count = len(prs)
             # if len(prs) > 4:
             #     prs = prs[0:4]
             dictionary = {"count": count, "prs": prs}
             write_json(dictionary, path, prettify=False)
+
         save_to_file(all, os.path.join(self.directory, "all_prs.json"))
         save_to_file(dependabot, os.path.join(self.directory, "dependabot_prs.json"))
         save_to_file(old, os.path.join(self.directory, "old_prs.json"))

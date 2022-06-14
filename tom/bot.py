@@ -15,7 +15,8 @@ from tom.packages import PackageMapper
 from tom.tag import Tagger
 from tom.utils import confirmation, pretty, email_sha256, write_json
 
-class Bot():
+
+class Bot:
     def __init__(self, config, secrets, directory, interactive, reports):
         self.secrets = secrets
         self.directory = directory
@@ -35,7 +36,9 @@ class Bot():
 
         self.jenkins = None
         if "jenkins" in config:
-            self.jenkins = Jenkins(config["jenkins"], config["jenkins_job"], secrets, self.username)
+            self.jenkins = Jenkins(
+                config["jenkins"], config["jenkins_job"], secrets, self.username
+            )
 
         self.github = GitHub(secrets["GITHUB_TOKEN"], self.username, self.jenkins_repos)
 
@@ -47,21 +50,30 @@ class Bot():
                 bot_token=secrets.get("SLACK_SEND_TOKEN"),
                 app_token=secrets.get("SLACK_APP_TOKEN"),
                 username=self.username,
-                interactive=interactive)
+                interactive=interactive,
+            )
             self.dispatcher = CommandDispatcher(self.slack)
 
-            if 'create_prs_from_slack' in self.bot_features:
-                self.github_interface = GitHubInterface(self.github, self.slack, self.dispatcher)
-            if 'update_dependencies' in self.bot_features:
-                self.updater = UpdateChecker(self.github, self.slack, self.dispatcher, 'Lex-2008')
-            if 'generate_changelogs' in self.bot_features:
+            if "create_prs_from_slack" in self.bot_features:
+                self.github_interface = GitHubInterface(
+                    self.github, self.slack, self.dispatcher
+                )
+            if "update_dependencies" in self.bot_features:
+                self.updater = UpdateChecker(
+                    self.github, self.slack, self.dispatcher, "Lex-2008"
+                )
+            if "generate_changelogs" in self.bot_features:
                 self.changelogger = ChangelogGenerator(
-                    self.github, self.slack, self.dispatcher, 'Lex-2008')
-            if 'map_packages' in self.bot_features:
+                    self.github, self.slack, self.dispatcher, "Lex-2008"
+                )
+            if "map_packages" in self.bot_features:
                 self.package_mapper = PackageMapper(
-                    self.github, self.slack, self.dispatcher, 'Lex-2008')
-            if 'tag_builds' in self.bot_features:
-                self.tagger = Tagger(self.github, self.slack, self.dispatcher, 'Lex-2008')
+                    self.github, self.slack, self.dispatcher, "Lex-2008"
+                )
+            if "tag_builds" in self.bot_features:
+                self.tagger = Tagger(
+                    self.github, self.slack, self.dispatcher, "Lex-2008"
+                )
 
     def post(self, path, data, msg=None):
         if self.interactive:
@@ -102,8 +114,11 @@ class Bot():
         else:
             thanks = random.choice(["Thanks", "Thank you"])
             pull = random.choice(["PR", "pull request"])
-            comment = "{thanks} for submitting a {pr}! Maybe @{user} can review this?".format(
-                thanks=thanks, pr=pull, user=pr.reviewer)
+            comment = (
+                "{thanks} for submitting a {pr}! Maybe @{user} can review this?".format(
+                    thanks=thanks, pr=pull, user=pr.reviewer
+                )
+            )
             self.comment(pr, comment)
 
     def leave_review(self, pr):
@@ -159,22 +174,28 @@ class Bot():
         if "approve_prs" in self.bot_features:
             self.leave_review(pr)
 
-
     def comment_badge(self, pr, num, url, badge_text):
         badge_icon = "{url}/buildStatus/icon?job={job}&build={num}".format(
-            url=self.jenkins.url, job=self.jenkins.job_name, num=num)
+            url=self.jenkins.url, job=self.jenkins.job_name, num=num
+        )
         badge_link = "{url}/job/{job}/{num}/".format(
-            url=self.jenkins.url, job=self.jenkins.job_name, num=num)
+            url=self.jenkins.url, job=self.jenkins.job_name, num=num
+        )
         badge = "[![Build Status]({})]({})".format(badge_icon, badge_link)
         response = random.choice(["Alright", "Sure"])
         if badge_text:
             badge_text = "\n\n" + badge_text  # Under looks better
         buildcache = "http://buildcache.cfengine.com"
-        packages = "{}/packages/testing-pr/jenkins-pr-pipeline-{}/".format(buildcache, num)
+        packages = "{}/packages/testing-pr/jenkins-pr-pipeline-{}/".format(
+            buildcache, num
+        )
         new_comment = "{}, I triggered a build:\n\n{}{}\n\n**Jenkins:** {}\n\n**Packages:** {}".format(
-            response, badge, badge_text, url, packages)
-        if pr.short_repo_name.startswith('documentation'):
-            docs = "{}/packages/build-documentation-pr/jenkins-pr-pipeline-{}/output/_site/".format(buildcache, num)
+            response, badge, badge_text, url, packages
+        )
+        if pr.short_repo_name.startswith("documentation"):
+            docs = "{}/packages/build-documentation-pr/jenkins-pr-pipeline-{}/output/_site/".format(
+                buildcache, num
+            )
             new_comment += "\n\n**Documentation:** {}".format(docs)
         self.comment(pr, new_comment)
 
@@ -190,7 +211,7 @@ class Bot():
             exotics = True
             description = "(with exotics)"
         # flag if docs build is requested
-        docs = pr.short_repo_name.startswith('documentation')
+        docs = pr.short_repo_name.startswith("documentation")
 
         no_tests = "no tests" in comment
         if no_tests:
@@ -207,8 +228,9 @@ class Bot():
             if not confirmation(msg):
                 return
 
-        headers, body = self.jenkins.trigger(prs, pr.base_branch, pr.title, exotics, comment.author,
-                                             docs, no_tests)
+        headers, body = self.jenkins.trigger(
+            prs, pr.base_branch, pr.title, exotics, comment.author, docs, no_tests
+        )
 
         queue_url = headers["Location"]
 
@@ -218,7 +240,9 @@ class Bot():
         self.comment_badge(pr, num, url, description)
 
     def handle_mention(self, pr, comment):
-        deny = "@{} : I'm sorry, I cannot do that. @olehermanse please help.".format(comment.author)
+        deny = "@{} : I'm sorry, I cannot do that. @olehermanse please help.".format(
+            comment.author
+        )
         if comment.author not in self.trusted:
             print("Denying mention from {}".format(comment.author))
             self.comment(pr, deny)
@@ -263,7 +287,10 @@ class Bot():
         if "ping_reviewers" in self.bot_features:
             self.find_reviewers(pr)
             self.ping_reviewer(pr)
-        if ("check_commit_emails" in self.bot_features or "approve_prs" in self.bot_features):
+        if (
+            "check_commit_emails" in self.bot_features
+            or "approve_prs" in self.bot_features
+        ):
             self.review(pr)
         if "trigger_jenkins_from_gh_comments" in self.bot_features:
             self.handle_comments(pr)
@@ -298,9 +325,13 @@ class Bot():
             try:
                 self.handle_pr(pull)
             except AssertionError:
-                log.error("AssertionError encountered while handling '{}'".format(pull["title"]))
+                log.error(
+                    "AssertionError encountered while handling '{}'".format(
+                        pull["title"]
+                    )
+                )
                 errs += 1
-        if (errs == 0):
+        if errs == 0:
             log.info("Tom successful")
         else:
             log.error("Tom encountered {} errors".format(errs))
@@ -310,17 +341,17 @@ class Bot():
             self.slack.parse_stdin(self.dispatcher)
             return
 
-        print('Type Slack messages (do not prefix them with bot name)')
+        print("Type Slack messages (do not prefix them with bot name)")
         print('Type "help" for list of commands')
         print('Type "quit" or "exit" when bored')
-        prompt = '<@{}> '.format(self.username)
-        self.slack.reply_to_user = 'con'
+        prompt = "<@{}> ".format(self.username)
+        self.slack.reply_to_user = "con"
         while True:
             try:
                 text = input(prompt)
             except EOFError:
                 # Ctrl-D was pressed
                 return
-            if text.lower().strip() in ['quit', 'exit']:
+            if text.lower().strip() in ["quit", "exit"]:
                 return
             self.dispatcher.parse_text(text)

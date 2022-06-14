@@ -13,10 +13,14 @@ from tom.utils import pretty, write_json
 # Global constant, reused many times for finding emails in comments:
 _EMAIL_REGEX = re.compile(r"[-_\.a-zA-Z0-9]+\@[-_\.a-zA-Z0-9]+\.[a-zA-Z]+")
 
-class GitHub():
+
+class GitHub:
     def __init__(self, token, user_agent, known_repos):
         self.token = token
-        self.headers = {"Authorization": "token {}".format(token), "User-Agent": user_agent}
+        self.headers = {
+            "Authorization": "token {}".format(token),
+            "User-Agent": user_agent,
+        }
         self.get_cache = {}
         self.known_repos = known_repos
 
@@ -38,14 +42,17 @@ class GitHub():
         data = r.json()
         log.debug(pretty(data))
         self.get_cache[path] = data
-        if (not isinstance(data, list) or 'link' not in r.headers
-                or 'rel="next"' not in r.headers['link']):
+        if (
+            not isinstance(data, list)
+            or "link" not in r.headers
+            or 'rel="next"' not in r.headers["link"]
+        ):
             # no need to paginate
             return data
-        all_links = r.headers['link'].split(',')
+        all_links = r.headers["link"].split(",")
         next_link = [link for link in all_links if 'rel="next"' in link]
-        next_link = re.search('<(.*)>', next_link[0]).group(1)
-        log.debug('paginating from {} to {}'.format(path, next_link))
+        next_link = re.search("<(.*)>", next_link[0]).group(1)
+        log.debug("paginating from {} to {}".format(path, next_link))
         return data + self.get(next_link)
 
     def put(self, path, data):
@@ -72,14 +79,15 @@ class GitHub():
         return data
 
     def create_pr(
-            self,
-            target_repo,
-            target_branch,
-            source_user,
-            source_branch,
-            title,
-            text,
-            simple_output=True):
+        self,
+        target_repo,
+        target_branch,
+        source_user,
+        source_branch,
+        title,
+        text,
+        simple_output=True,
+    ):
         """Sends request to GitHub to create a pull request.
         Args:
             target_repo - repository where to create PR, for example 'cfengine/core'
@@ -102,19 +110,18 @@ class GitHub():
 
         data = {
             "title": title,
-            "head": source_user + ':' + source_branch,
+            "head": source_user + ":" + source_branch,
             "base": target_branch,
             "body": text,
-            "maintainer_can_modify": True
+            "maintainer_can_modify": True,
         }
         pr = self.post("/repos/{}/pulls".format(target_repo), data, False)
         if not simple_output:
             return pr
-        if not 'html_url' in pr:
-            return 'PR creation failed with error:\n```\n{}\n```\n'\
-                    .format(pretty(pr))
+        if not "html_url" in pr:
+            return "PR creation failed with error:\n```\n{}\n```\n".format(pretty(pr))
         else:
-            return 'PR: {}'.format(pr['html_url'])
+            return "PR: {}".format(pr["html_url"])
 
     @staticmethod
     def repo_path(owner, repo):
@@ -125,33 +132,43 @@ class GitHub():
         return "/repos/{}/{}/issues/{}/comments".format(owner, repo, issue)
 
 
-class GitHubInterface():
+class GitHubInterface:
     """class responsible for providing high-level user-visible commands"""
 
     def __init__(self, github, slack, dispatcher):
         self.github = github
         self.slack = slack
         try:
-            with open('github_usernames.json') as f:
+            with open("github_usernames.json") as f:
                 self.github_usernames = json.load(f)
         except:
             self.github_usernames = {}
         dispatcher.register_command(
-            'github', lambda username: self.set_account(username), 'username',
-            'Register your github username',
-            'Saves association between Slack and Github account names. ' +
-            'Required for `repo` and `pr` commands')
+            "github",
+            lambda username: self.set_account(username),
+            "username",
+            "Register your github username",
+            "Saves association between Slack and Github account names. "
+            + "Required for `repo` and `pr` commands",
+        )
         dispatcher.register_command(
-            'repos', lambda: self.update_repos(), False,
-            'Find your forks of private cfengine and mendersoftware repos',
-            "There is no single API call to list all visible private repos for " +
-            "a given user, so we have to loop through all cfengine and mender " +
-            "private repos trying to find a fork belonging to current user. " +
-            "This takes time so instead of doing it on every `pr` command, " +
-            "we store this in cache. And this command refreshes the cache")
+            "repos",
+            lambda: self.update_repos(),
+            False,
+            "Find your forks of private cfengine and mendersoftware repos",
+            "There is no single API call to list all visible private repos for "
+            + "a given user, so we have to loop through all cfengine and mender "
+            + "private repos trying to find a fork belonging to current user. "
+            + "This takes time so instead of doing it on every `pr` command, "
+            + "we store this in cache. And this command refreshes the cache",
+        )
         dispatcher.register_command(
-            'pr', lambda: self.create_prs_from_slack(), False,
-            'make pull request from the branch you last pushed to', "")
+            "pr",
+            lambda: self.create_prs_from_slack(),
+            False,
+            "make pull request from the branch you last pushed to",
+            "",
+        )
 
     def set_account(self, username):
         """Saves association between Slack username and GitHub account.
@@ -160,11 +177,15 @@ class GitHubInterface():
         """
 
         self.github_usernames[self.slack.reply_to_user] = username
-        with open('github_usernames.json', 'w') as f:
+        with open("github_usernames.json", "w") as f:
             json.dump(self.github_usernames, f, indent=2)
-        self.slack.reply(("I will remember that your github username is {}. "+
-                "Now say \"<@{}> repos\" for me to update list of your private repos")\
-                .format(username, self.slack.my_username), True)
+        self.slack.reply(
+            (
+                "I will remember that your github username is {}. "
+                + 'Now say "<@{}> repos" for me to update list of your private repos'
+            ).format(username, self.slack.my_username),
+            True,
+        )
 
     def get_github_name(self):
         """Returns Github username belonging to author of current Slack message.
@@ -175,8 +196,12 @@ class GitHubInterface():
         if not self.slack.reply_to_user in self.github_usernames:
             self.slack.reply(
                 (
-                    "I don't know your github username. " + "Please say \"<@{}> github: USERNAME\" "
-                    + "to identify yourself").format(self.slack.my_username), True)
+                    "I don't know your github username. "
+                    + 'Please say "<@{}> github: USERNAME" '
+                    + "to identify yourself"
+                ).format(self.slack.my_username),
+                True,
+            )
             return None
         return self.github_usernames[self.slack.reply_to_user]
 
@@ -202,37 +227,43 @@ class GitHubInterface():
         if not username:
             return
         message = (
-            'Looking for all forks of private repos from ' +
-            'cfengine and mendersoftware orgs for {} user...').format(username)
+            "Looking for all forks of private repos from "
+            + "cfengine and mendersoftware orgs for {} user..."
+        ).format(username)
         self.slack.reply(message)
         user_repos = []
-        log.info('getting org repos')
+        log.info("getting org repos")
         # TODO: get orgs dynamically
         org_repos = self.github.get("/orgs/cfengine/repos?type=private")
         org_repos += self.github.get("/orgs/mendersoftware/repos?type=private")
-        org_repos_with_forks = [repo for repo in org_repos if repo['forks'] > 0]
+        org_repos_with_forks = [repo for repo in org_repos if repo["forks"] > 0]
         for repo in org_repos_with_forks:
-            log.info('getting forks for ' + repo['full_name'])
-            repo_forks = self.github.get(repo['forks_url'])
-            user_forks = [repo for repo in repo_forks if repo['owner']['login'] == username]
+            log.info("getting forks for " + repo["full_name"])
+            repo_forks = self.github.get(repo["forks_url"])
+            user_forks = [
+                repo for repo in repo_forks if repo["owner"]["login"] == username
+            ]
             user_repos += user_forks
             if len(user_forks) > 0:
-                log.info('found repos:' + str(len(user_forks)))
+                log.info("found repos:" + str(len(user_forks)))
         # TODO: here we assume that user repos always start with username.
         # Make it more explict or cleanup
-        user_repo_names = [repo['name'] for repo in user_repos]
-        os.makedirs('github_repos', exist_ok=True)
-        with open('github_repos/{}.json'.format(username), 'w') as f:
+        user_repo_names = [repo["name"] for repo in user_repos]
+        os.makedirs("github_repos", exist_ok=True)
+        with open("github_repos/{}.json".format(username), "w") as f:
             json.dump(user_repo_names, f, indent=2)
-        message = (('I will remember that you have {} private repos:'+
-                '\n```\n{}\n```\n'+
-                'Next time you add a new private fork you want me to be aware of, '+
-                'say \"<@{}> repos\" so I refreshed the list. '+
-                "Note that public repos are easy-listable, so you don't need to "+
-                "bother about them").\
-                format(len(user_repo_names),
-                    '\n'.join(sorted(user_repo_names)),
-                    self.slack.my_username))
+        message = (
+            "I will remember that you have {} private repos:"
+            + "\n```\n{}\n```\n"
+            + "Next time you add a new private fork you want me to be aware of, "
+            + 'say "<@{}> repos" so I refreshed the list. '
+            + "Note that public repos are easy-listable, so you don't need to "
+            + "bother about them"
+        ).format(
+            len(user_repo_names),
+            "\n".join(sorted(user_repo_names)),
+            self.slack.my_username,
+        )
         self.slack.reply(message, True)
 
     def get_user_repos(self, username):
@@ -240,11 +271,11 @@ class GitHubInterface():
         Updates such list if can't be loaded from file.
         """
         try:
-            with open('github_repos/{}.json'.format(username)) as f:
+            with open("github_repos/{}.json".format(username)) as f:
                 return json.load(f)
         except:
             self.update_repos(username)
-            with open('github_repos/{}.json'.format(username)) as f:
+            with open("github_repos/{}.json".format(username)) as f:
                 return json.load(f)
         # TODO: maybe print something if the list is empty?
 
@@ -255,11 +286,14 @@ class GitHubInterface():
         repo_names = self.get_user_repos(username)
         if len(repo_names) == 0:
             return None
-        user_repos = [self.github.get("/repos/{}/{}".format(username, repo)) for repo in repo_names]
+        user_repos = [
+            self.github.get("/repos/{}/{}".format(username, repo))
+            for repo in repo_names
+        ]
         open_repo = self.github.get("/users/{}/repos?sort=pushed".format(username))[0]
-        log.info('adding open repo: ' + open_repo['name'])
+        log.info("adding open repo: " + open_repo["name"])
         user_repos.append(open_repo)
-        date_repos = dict([(repo['pushed_at'], repo['name']) for repo in user_repos])
+        date_repos = dict([(repo["pushed_at"], repo["name"]) for repo in user_repos])
         last_date = sorted(date_repos.keys())[-1]
         return date_repos[last_date]
 
@@ -267,15 +301,15 @@ class GitHubInterface():
         """Returns name of branch in username/repo repository with highest
         (most recent) 'committed' date
         """
-        repo_branches = self.github.get("/repos/{}/{}/branches"\
-                .format(username, repo))
+        repo_branches = self.github.get("/repos/{}/{}/branches".format(username, repo))
         date_branches = {}
         for branch in repo_branches:
-            branch_name = branch['name']
-            branch_commit = self.github.get("/repos/{}/{}/commits/{}"\
-                    .format(username, repo, branch_name))
-            branch_date = branch_commit['commit']['committer']['date']
-            log.info('branch {} has date {}'.format(branch_name, branch_date))
+            branch_name = branch["name"]
+            branch_commit = self.github.get(
+                "/repos/{}/{}/commits/{}".format(username, repo, branch_name)
+            )
+            branch_date = branch_commit["commit"]["committer"]["date"]
+            log.info("branch {} has date {}".format(branch_name, branch_date))
             date_branches[branch_date] = branch_name
         last_date = sorted(date_branches.keys())[-1]
         return date_branches[last_date]
@@ -287,10 +321,10 @@ class GitHubInterface():
         """
         repo_info = self.github.get("/repos/{}/{}".format(username, repo))
         try:
-            return repo_info['parent']['full_name']  # cfengine/core
+            return repo_info["parent"]["full_name"]  # cfengine/core
         except:
-            log.debug('using current repo as parent')
-            return '{}/{}'.format(username, repo)
+            log.debug("using current repo as parent")
+            return "{}/{}".format(username, repo)
 
     def find_parent(self, username, repo, last_branch):
         """Returns tuple of parent repository (found by find_parent_repo function)
@@ -302,15 +336,18 @@ class GitHubInterface():
         """
         parent_repo = self.find_parent_repo(username, repo)
         parent_branches = self.github.get("/repos/{}/branches".format(parent_repo))
-        parent_branch = 'master'
+        parent_branch = "master"
         for branch in parent_branches:
-            branch_name = branch['name']
-            short_branch_name = re.sub('.x$', '', branch_name)
-            log.debug('trying branch ' + branch_name)
+            branch_name = branch["name"]
+            short_branch_name = re.sub(".x$", "", branch_name)
+            log.debug("trying branch " + branch_name)
             if last_branch.startswith(short_branch_name):
-                log.debug('it matches! old parent {} new parent {}'\
-                        .format(parent_branch, branch_name))
-                if parent_branch == 'master':
+                log.debug(
+                    "it matches! old parent {} new parent {}".format(
+                        parent_branch, branch_name
+                    )
+                )
+                if parent_branch == "master":
                     parent_branch = branch_name
                 else:
                     # we already found one candidate to be a parent branch.
@@ -332,30 +369,34 @@ class GitHubInterface():
         username = self.get_github_name()
         if not username:
             return
-        message = 'Creating PR for {} user. Finding the last pushed-to repo...'\
-                .format(username)
+        message = "Creating PR for {} user. Finding the last pushed-to repo...".format(
+            username
+        )
         self.slack.reply(message)
         repo = self.find_last_repo(username)
         if not repo:
             return
-        message = ("You last pushed to {} repo. "+
-                "Looking for the branch with most recent commit...").\
-                format(repo)
+        message = (
+            "You last pushed to {} repo. "
+            + "Looking for the branch with most recent commit..."
+        ).format(repo)
         self.slack.reply(message)
         last_branch = self.find_last_branch_in_repo(username, repo)
-        log.info('last branch: ' + last_branch)
+        log.info("last branch: " + last_branch)
         # now, try to find a parent for it.
         (parent_repo, parent_branch) = self.find_parent(username, repo, last_branch)
-        log.info('parent branch: ' + parent_branch)
+        log.info("parent branch: " + parent_branch)
         pr_text = self.github.create_pr(
-            parent_repo, parent_branch, username, last_branch, last_branch + ' PR', '')
-        message = ("Found last branch: {}, corresponding parent branch: {} "+
-                "in parent repo: {}. {}")\
-                .format(last_branch, parent_branch, parent_repo, pr_text)
+            parent_repo, parent_branch, username, last_branch, last_branch + " PR", ""
+        )
+        message = (
+            "Found last branch: {}, corresponding parent branch: {} "
+            + "in parent repo: {}. {}"
+        ).format(last_branch, parent_branch, parent_repo, pr_text)
         self.slack.reply(message, True)
 
 
-class Comment():
+class Comment:
     def __init__(self, data):
         self.data = data
         self.author = data["user"]["login"]
@@ -368,7 +409,7 @@ class Comment():
         return value in self.body.lower()
 
 
-class Comments():
+class Comments:
     def __init__(self, data, github):
         self.data = data
         self.github = github
@@ -386,7 +427,7 @@ class Comments():
         return self.comments[index]
 
 
-class PR():
+class PR:
     def __init__(self, data, github):
         self.data = data  # JSON dict from GitHub API
         self.github = github  # GitHub object with http methods and credentials
@@ -411,7 +452,9 @@ class PR():
         self.reviews_url = self.api_url + "/reviews"
         self.requested_reviewers = data["requested_reviewers"]
 
-        self.created = datetime.datetime.strptime(data["created_at"], '%Y-%m-%dT%H:%M:%SZ')
+        self.created = datetime.datetime.strptime(
+            data["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+        )
         now = datetime.datetime.now()
         self.age = now - self.created
 
@@ -442,9 +485,9 @@ class PR():
                     pr_link = pr_link[:-1]
 
                 if "#" in pr_link:  # Github #1234 PR syntax
-                    repo_pr = pr_link[pr_link.rindex("#") + 1:]
+                    repo_pr = pr_link[pr_link.rindex("#") + 1 :]
                 elif "/" in pr_link:
-                    repo_pr = pr_link[pr_link.rindex("/") + 1:]
+                    repo_pr = pr_link[pr_link.rindex("/") + 1 :]
                 else:
                     continue
 
