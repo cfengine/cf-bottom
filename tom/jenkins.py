@@ -56,20 +56,29 @@ class Jenkins:
         docs=False,
         no_tests=False,
     ):
-        path = self.trigger_url
         params = {}
+        need_slow_build = any(
+            repo
+            for repo in prs.keys()
+            if repo in ["core", "enterprise", "nova", "masterfiles"]
+        )
+        job = "pr-pipeline"
+        if docs:
+            if need_slow_build:
+                job = "build-and-deploy-docs-{}".format(branch)
+                no_tests = True  # but allow for override if specified
+            else:
+                job = "fast-build-and-deploy-docs-{}".format(branch)
+        else:
+            if "documentation" in prs.keys():
+                job = "build-and-deploy-docs-{}".format(branch)
+                no_tests = False
+                # clear configurations filter out so all default packages are generated and tested
+                params["CONFIGURATIONS_FILTER"] = ""
+        path = "{}job/{}/buildWithParameters/api/json".format(self.url, job)
         branches = ["{}#{}".format(r, p) for r, p in prs.items()]
         branches.append(branch)
         branches = " ".join(branches)
-        if prs:
-            for repo in prs:
-                param_name = repo.upper().replace("-", "_")
-                assert " " not in param_name
-                param_name = param_name + "_REV"
-                param_name = param_name.replace("DOCUMENTATION", "DOCS")
-                param_name = param_name.replace("GENERATOR", "GEN")
-                params[param_name] = str(prs[repo])
-        params["BASE_BRANCH"] = str(branch)
         if not user:
             user = self.username
         if exotics:
@@ -78,29 +87,49 @@ class Jenkins:
             description = "{} @{} ({})".format(title, user, branches)
         else:
             description = "Unnamed build ({})".format(user)
-        if exotics:
-            description += " - WITH EXOTICS"
-        if no_tests:
-            params["NO_TESTS"] = True
-            description += " [NO TESTS]"
-        params["BUILD_DESC"] = description
-        if docs:
-            # building documentation
-            if params["BASE_BRANCH"] != "master":
-                params["BASE_BRANCH"] += ".x"
-            if "DOCS_REV" not in params:
-                params["DOCS_REV"] = str(branch)
-            if "DOCS_GEN_REV" not in params:
-                params["DOCS_GEN_REV"] = str(branch)
-            params["BUILD_DOCS"] = True
+        # both build-and-deploy-docs types (fast and regular) can use "pr" as the DOCS_BRANCH/BRANCH
+        # this translates to a docs URL of http://buildcache.cfengine.com/packages/build-documentation-pr/jenkins-pr-pipeline-52/output/_site/
+        # which includes after build-documentation-pr folder, a folder for the specific pipeline build
+        if "/build-and-deploy-docs" in path:
             params["DOCS_BRANCH"] = "pr"
-            params["NO_TESTS"] = True
-            params["NO_DEPLOYMENT_TESTS"] = True
-            params["NO_FR_TESTS"] = True
-            params["NO_STATIC_CHECKS"] = True
-            params[
-                "CONFIGURATIONS_FILTER"
-            ] = 'label == "PACKAGES_HUB_x86_64_linux_ubuntu_16"'
+        if "fast-build-and-deploy-docs" in path:
+            params["BRANCH"] = "pr"
+        repos_accepted = [
+            "core",
+            "enterprise",
+            "nova",
+            "masterfiles",
+            "documentation",
+            "documentation-generator",
+        ]
+        if "fast-build-and-deploy-docs" not in path:
+            repos_accepted.extend(
+                [
+                    "libntech",
+                    "buildscripts",
+                    "mission-portal",
+                    "ldap",
+                    "mender-qa",
+                ]
+            )
+            if docs:
+                params["BASE_BRANCH"] = "{}.x".format(branch)
+            else:
+                params["BASE_BRANCH"] = str(branch)
+            if exotics:
+                description += " - WITH EXOTICS"
+            if no_tests:
+                params["NO_TESTS"] = True
+                description += " [NO TESTS]"
+        if prs:
+            for repo in (r for r in prs.keys() if r in repos_accepted):
+                param_name = repo.upper().replace("-", "_")
+                assert " " not in param_name
+                param_name = param_name + "_REV"
+                param_name = param_name.replace("DOCUMENTATION", "DOCS")
+                param_name = param_name.replace("GENERATOR", "GEN")
+                params[param_name] = str(prs[repo])
+        params["BUILD_DESC"] = description
         return self.post(path, params)
 
     def wait_for_queue(self, url):

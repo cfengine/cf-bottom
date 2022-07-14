@@ -1,3 +1,4 @@
+import re
 import sys
 import random
 import json
@@ -18,6 +19,8 @@ from tom.utils import confirmation, pretty, email_sha256, write_json
 
 class Bot:
     def __init__(self, config, secrets, directory, interactive, reports):
+        log.debug("Bot initialized with config: {}".format(config))
+        self.response_choices = config.get("response_choices", ["Alright", "Sure"])
         self.secrets = secrets
         self.directory = directory
         self.interactive = interactive
@@ -30,6 +33,7 @@ class Bot:
         self.repo_maintainers = config.get("repos", {})
         self.default_maintainers = config.get("reviewers", [])
         self.trusted = config.get("trusted", [])
+
         self.jenkins_repos = config.get("jenkins_repos", [])
         banned_emails = config.get("banned_emails", {})
         self.banned_emails = [v for v in banned_emails.values()]
@@ -174,27 +178,42 @@ class Bot:
         if "approve_prs" in self.bot_features:
             self.leave_review(pr)
 
-    def comment_badge(self, pr, num, url, badge_text):
-        badge_icon = "{url}/buildStatus/icon?job={job}&build={num}".format(
-            url=self.jenkins.url, job=self.jenkins.job_name, num=num
+    def comment_badge(self, pr, job_number, job_url, badge_text):
+        # job_url is something like this: url=https://ci.cfengine.com/job/build-and-deploy-docs-master/22
+        # so we can parse out the job name, the bit after job/ and before /{job_number}
+        regex = r"{}job/([-a-z0-9\.]+)/{}".format(self.jenkins.url, job_number)
+        match = re.match(regex, job_url)
+        if not match or len(match.groups()) != 1:
+            log.error(
+                "job_url, {}, didn't match expected format regex, {}".format(
+                    job_url, regex
+                )
+            )
+        job = match.group(1)
+        badge_icon = "{url}/buildStatus/icon?job={job}&build={job_number}".format(
+            url=self.jenkins.url, job=job, job_number=job_number
         )
-        badge_link = "{url}/job/{job}/{num}/".format(
-            url=self.jenkins.url, job=self.jenkins.job_name, num=num
+        badge_link = "{url}/job/{job}/{job_number}/".format(
+            url=self.jenkins.url, job=job, job_number=job_number
         )
         badge = "[![Build Status]({})]({})".format(badge_icon, badge_link)
-        response = random.choice(["Alright", "Sure"])
+        response = random.choice(self.response_choices)
         if badge_text:
             badge_text = "\n\n" + badge_text  # Under looks better
         buildcache = "http://buildcache.cfengine.com"
-        packages = "{}/packages/testing-pr/jenkins-pr-pipeline-{}/".format(
-            buildcache, num
+        packages = "{}/packages/testing-pr/jenkins-{}-{}/".format(
+            buildcache, job, job_number
         )
-        new_comment = "{}, I triggered a build:\n\n{}{}\n\n**Jenkins:** {}\n\n**Packages:** {}".format(
-            response, badge, badge_text, url, packages
+        new_comment = "{}, I triggered a build:\n\n{}{}\n\n**Jenkins:** {}".format(
+            response, badge, badge_text, job_url
         )
-        if pr.short_repo_name.startswith("documentation"):
-            docs = "{}/packages/build-documentation-pr/jenkins-pr-pipeline-{}/output/_site/".format(
-                buildcache, num
+        if "fast-build-and-deploy-docs" not in job:
+            new_comment += "\n\n**Packages:** {}".format(packages)
+        if "build-and-deploy-docs" in job:
+            docs = (
+                "{}/packages/build-documentation-pr/jenkins-{}-{}/output/_site/".format(
+                    buildcache, job, job_number
+                )
             )
             new_comment += "\n\n**Documentation:** {}".format(docs)
         self.comment(pr, new_comment)
@@ -229,7 +248,13 @@ class Bot:
                 return
 
         headers, body = self.jenkins.trigger(
-            prs, pr.base_branch, pr.title, exotics, comment.author, docs, no_tests
+            prs,
+            pr.base_branch,
+            pr.title,
+            exotics,
+            comment.author,
+            docs,
+            no_tests,
         )
 
         queue_url = headers["Location"]
