@@ -30,4 +30,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Check formatting with black
       run: |
-        black --check tom/*.py test/*.py
+        black --check tom/*.py tests/*.py

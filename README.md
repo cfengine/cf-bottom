@@ -10,10 +10,10 @@ I trigger pull requests when someone mentions me in a GitHub Pull Request.
 If you have valid config and secrets in the current working directory, you can run:
 
 ```
-$ python3 self/tom --log-level INFO
+$ python3 -m tom --directory . --log-level info --interactive
 ```
 
-(In the above case, `self` is the repo folder, `tom` is the python package).
+(This assumes running in the repo folder, `.`, and interactive so you will be prompted before any actions are taken).
 
 Example on our (private) Jenkins:
 
@@ -87,3 +87,11 @@ Here is an example of what the secrets file can look like:
 
 Most of the codebase works by polling open pull requests, rather than having a web server wait for Webhooks.
 There is one exception, the optional slack bot, which can be triggered from mentions in Slack.
+
+### development / testing
+
+See run_tests.sh here for a development workflow working with pytest unit tests.
+
+Open htmlcov/index.html to see python code coverage information after test runs.
+
+pass a test name to run_tests.sh and it will only run that one test.
