@@ -45,7 +45,8 @@
         "nova",
         "masterfiles",
         "mission-portal",
-        "buildscripts"
+        "buildscripts",
+        "documentation"
       ],
       "repos": {
         "cfengine/core": ["olehermanse", "vpodzime"],
