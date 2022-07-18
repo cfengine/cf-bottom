@@ -87,13 +87,11 @@ class Jenkins:
             description = "{} @{} ({})".format(title, user, branches)
         else:
             description = "Unnamed build ({})".format(user)
-        # both build-and-deploy-docs types (fast and regular) can use "pr" as the DOCS_BRANCH/BRANCH
+        # both build-and-deploy-docs types (fast and regular) can use "pr" as the DOCS_BRANCH
         # this translates to a docs URL of http://buildcache.cfengine.com/packages/build-documentation-pr/jenkins-pr-pipeline-52/output/_site/
         # which includes after build-documentation-pr folder, a folder for the specific pipeline build
-        if "/build-and-deploy-docs" in path:
+        if "build-and-deploy-docs" in path:
             params["DOCS_BRANCH"] = "pr"
-        if "fast-build-and-deploy-docs" in path:
-            params["BRANCH"] = "pr"
         repos_accepted = [
             "core",
             "enterprise",
