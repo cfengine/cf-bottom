@@ -1,7 +1,7 @@
 def test_trigger_build_system_test():
     github_requests, jenkins_requests = _trigger_build(
         repo="core",
-        prs={"core": 23, "system-testing": 86},
+        prs={"core": 5010, "nova": 1918, "system-testing": 445},
         comment="@cf-bottom trigger",
     )
 
@@ -9,15 +9,16 @@ def test_trigger_build_system_test():
         "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json",
         data={
             "BASE_BRANCH": "master",
-            "CORE_REV": "23",
-            "SYSTEM_TESTING_REV": "86",
-            "BUILD_DESC": "Test PR Title @test-trusted-author (core#23 system-testing#86 master)",
+            "CORE_REV": "5010",
+            "NOVA_REV": "1918",
+            "SYSTEM_TESTING_REV": "445",
+            "BUILD_DESC": "Test PR Title @test-trusted-author (core#5010 nova#1918 system-testing#445 master)",
         },
         headers={"Jenkins-Crumb": "test-jenkins-crumb"},
         auth=ANY,
     )
     github_requests.post.assert_called_once_with(
-        "https://github.com/cfengine/core/pulls/23/comment_reference",
+        "https://github.com/cfengine/core/pulls/5010/comment_reference",
         headers={"Authorization": "token test-github-token", "User-Agent": "cf-bottom"},
         json={
             "body": "Predictably, I triggered a build:\n\n[![Build Status](https://ci.cfengine.com//buildStatus/icon?job=pr-pipeline&build=22)](https://ci.cfengine.com//job/pr-pipeline/22/)\n\n**Jenkins:** https://ci.cfengine.com/job/pr-pipeline/22\n\n**Packages:** http://buildcache.cfengine.com/packages/testing-pr/jenkins-pr-pipeline-22/"

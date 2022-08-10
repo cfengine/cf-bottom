@@ -99,7 +99,6 @@ class Jenkins:
             "enterprise",
             "masterfiles",
             "nova",
-            "system-testing",
         ]
         if "fast-build-and-deploy-docs" not in path:
             repos_accepted.extend(
@@ -109,6 +108,7 @@ class Jenkins:
                     "mission-portal",
                     "ldap",
                     "mender-qa",
+                    "system-testing",
                 ]
             )
             if docs and branch != "master":
