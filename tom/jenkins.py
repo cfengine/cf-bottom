@@ -128,6 +128,10 @@ class Jenkins:
                 param_name = param_name.replace("GENERATOR", "GEN")
                 params[param_name] = str(prs[repo])
         params["BUILD_DESC"] = description
+        log.info(
+            "Triggering build with params: "
+            + " ".join(k + "=" + str(v) for k, v in params.items())
+        )
         return self.post(path, params)
 
     def wait_for_queue(self, url):
