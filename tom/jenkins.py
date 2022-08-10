@@ -94,11 +94,12 @@ class Jenkins:
             params["DOCS_BRANCH"] = "pr"
         repos_accepted = [
             "core",
-            "enterprise",
-            "nova",
-            "masterfiles",
             "documentation",
             "documentation-generator",
+            "enterprise",
+            "masterfiles",
+            "nova",
+            "system-testing",
         ]
         if "fast-build-and-deploy-docs" not in path:
             repos_accepted.extend(
