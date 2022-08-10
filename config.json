@@ -47,7 +47,8 @@
         "masterfiles",
         "mission-portal",
         "buildscripts",
-        "documentation"
+        "documentation",
+        "system-testing"
       ],
       "repos": {
         "cfengine/core": ["olehermanse", "vpodzime"],
@@ -58,7 +59,8 @@
         "cfengine/documentation": ["nickanderson", "craigcomstock"],
         "cfengine/contrib": ["nickanderson"],
         "cfengine/cf-bottom": ["olehermanse", "vpodzime", "cf-bottom"],
-        "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"]
+        "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"],
+        "cfengine/system-testing": ["Lex-2008", "craigcomstock", "vpodzime"]
       }
     },
     {
