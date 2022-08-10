@@ -110,7 +110,7 @@ class Jenkins:
                     "mender-qa",
                 ]
             )
-            if docs:
+            if docs and branch != "master":
                 params["BASE_BRANCH"] = "{}.x".format(branch)
             else:
                 params["BASE_BRANCH"] = str(branch)
