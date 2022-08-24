@@ -232,7 +232,7 @@ class Bot:
         # flag if docs build is requested
         docs = pr.short_repo_name.startswith("documentation")
 
-        no_tests = "no tests" in comment
+        no_tests = "no test" in comment
         if no_tests:
             description += " [NO TESTS]"
 
