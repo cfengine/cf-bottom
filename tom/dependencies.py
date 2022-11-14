@@ -264,7 +264,7 @@ class UpdateChecker:
             log.warn(message)
             self.slack.reply(message)
             return False
-        message = "Update {} from {} to {}".format(dep, old_version, new_version)
+        message = "Updated {} from {} to {}".format(dep, old_version, new_version)
         log.info(message)
         dist_file = "{}  {}".format(sha256sum, new_filename)
         self.buildscripts.put_file(dist_file_path, dist_file + "\n")
