@@ -140,7 +140,10 @@ class Tagger:
         message = "CFEngine %s" % tag.replace("-build", " ")
         for repo in repos:
             repo.run_command("tag", "-s", "-a", tag, "-m", message)
-            repo.push(tag, "upstream")
+            try:
+                repo.push(tag, "upstream")
+            except:
+                pass
 
     def run(self, args):
         if "," in args:
