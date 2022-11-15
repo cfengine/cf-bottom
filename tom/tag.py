@@ -41,7 +41,6 @@ class Tagger:
         "mission-portal",
         "buildscripts",
         "masterfiles",
-        "ldap-api",
     ]
 
     def __init__(self, github, slack, dispatcher, username):
