@@ -86,6 +86,7 @@ class ChangelogGenerator:
                 # ???
                 raise
         else:
+            # TODO: branch='3.18.0-x' vs branch='3.18.x'
             if branch == "{}.{}.x".format(version_parts[0], version_parts[1]):
                 # we already had version corresponding to a branch name,
                 # i.e. version 3.10.2 on a branch 3.10.x
@@ -96,7 +97,7 @@ class ChangelogGenerator:
                 # this is a first version on this branch
                 # so set it to [branch_name].0
                 branch_name_parts = branch.split(".")
-                version_parts = branch_name_parts[0:2] + [0]
+                version_parts = branch_name_parts[0:2] + ["0"]
         return ".".join(version_parts)
 
     def get_changelog_for(self, name, arg, old_version, branch):
