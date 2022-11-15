@@ -181,7 +181,7 @@ class ChangelogGenerator:
             branch,
             self.username,
             new_branchname,
-            "Changelog for " + branch,
+            "Changelog for " + new_version,
             "",
         )
         return pr_text
