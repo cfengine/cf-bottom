@@ -201,7 +201,7 @@ class UpdateChecker:
         if dep not in self.monitoring_ids:
             return False
         id = self.monitoring_ids[dep]
-        url = "https://release-monitoring.org/api/project/{}".format(id)
+        url = "https://release-monitoring.org/api/v2/versions/?project_id={}".format(id)
         try:
             data = requests.get(url).json()
         except:
@@ -209,11 +209,24 @@ class UpdateChecker:
                 "Failed to do a request to release-monitoring.org website"
             )
         try:
-            return data["version"]
+            stable_versions = data["stable_versions"]
         except:
             raise ReleaseMonitoringException(
-                "Failed to get version from data received from release-monitoring.org website"
+                "Failed to get stable_versions from data received from release-monitoring.org website"
             )
+        try:
+            version = stable_versions[0]
+        except:
+            raise ReleaseMonitoringException(
+                "Failed to get first (latest) stable version"
+            )
+        if dep in "openldap":
+            # special case for ldap: release-monitoring takes version number
+            # from git repo, which uses underscores as separators, but later we
+            # download a file with dots as separators.
+            return re.sub("_", ".", version)
+        else:
+            return version
 
     def get_current_version(self, dep):
         """Get current version of dependency dep"""
