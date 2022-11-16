@@ -245,5 +245,5 @@ class PackageMapper:
             item["package"]: {"url": item["URL"]}
             for table in release_data["artifacts"]
             for item in release_data["artifacts"][table]
-            if "package" in item and "URL" in item
+            if "package" in item and "URL" in item and not item["URL"].endswith("bff")
         }

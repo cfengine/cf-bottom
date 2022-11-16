@@ -13,11 +13,12 @@ def setup_bot(directory, interactive, data, reports):
     return Bot(data, secrets, directory, interactive, reports)
 
 
-def run_talk(directory, user, interactive, reports):
+def run_talk(directory, user, interactive):
     config = load_config(directory)
     assert len(config["bots"]) > 0
     for bot_data in config["bots"]:
         if bot_data["username"] == user:
+            reports = Reports(directory)
             bot = setup_bot(directory, interactive, bot_data, reports)
             bot.talk()
             return
