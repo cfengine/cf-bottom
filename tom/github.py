@@ -23,6 +23,7 @@ class GitHub:
         }
         self.get_cache = {}
         self.known_repos = known_repos
+        self.reviewer = None
 
     def path(self, path):
         if path.startswith("/"):

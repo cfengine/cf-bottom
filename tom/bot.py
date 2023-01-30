@@ -31,6 +31,7 @@ class Bot:
         self.username = config["username"]
         self.orgs = config.get("orgs", [])
         self.repo_maintainers = config.get("repos", {})
+        self.repo_dependabot_maintainers = config.get("repos_dependabot", {})
         self.default_maintainers = config.get("reviewers", [])
         self.trusted = config.get("trusted", [])
 
@@ -103,6 +104,10 @@ class Bot:
             print("")
 
     def ping_reviewer(self, pr):
+        if pr.reviewer is None:
+            log.info("I don't know who to ping, no human set as reviewer")
+            return
+
         if pr.age < datetime.timedelta(days=1):
             log.info("This PR is less than a day old, I won't ping yet")
         elif self.username in pr.comments.users:
@@ -304,12 +309,27 @@ class Bot:
             pr.reviewers = self.default_maintainers
         pr.reviewer = random.choice(pr.reviewers)
 
+    def assign_dependabot_maintainer(self, pr):
+        if pr.author != "dependabot[bot]":
+            return
+        if pr.repo not in self.repos_dependabot:
+            log.warning(f"A dependabot PR in {pr.repo} with no assigned maintainer!")
+            return
+
+        pr.reviewer = self.repos_dependabot[pr.repo]
+
     def handle_pr(self, pr):
         log.info("Looking at: {} ({})".format(pr["title"], pr["html_url"]))
 
         pr = PR(pr, self.github)
         if "ping_reviewers" in self.bot_features:
             self.find_reviewers(pr)
+        if "ping_reviewers_dependabot" in self.bot_features:
+            self.assign_dependabot_maintainer(pr)
+        if (
+            "ping_reviewers" in self.bot_features
+            or "ping_reviewers_dependabot" in self.bot_features
+        ):
             self.ping_reviewer(pr)
         if (
             "check_commit_emails" in self.bot_features
