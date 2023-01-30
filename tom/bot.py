@@ -305,7 +305,6 @@ class Bot:
         pr.reviewer = random.choice(pr.reviewers)
 
     def handle_pr(self, pr):
-        url = pr["url"].replace("https://api.github.com/repos/", "")
         log.info("Looking at: {} ({})".format(pr["title"], pr["html_url"]))
 
         pr = PR(pr, self.github)
