@@ -112,7 +112,7 @@ class PackageMapper:
                 "Updating packages mapping for %s %s " % (value_type, value)
             )
             result = {"agent": {}, "hub": {}}
-            for (product, codename) in [
+            for product, codename in [
                 ("community", "community"),
                 ("enterprise", "nova"),
             ]:
