@@ -31,7 +31,7 @@ class Bot:
         self.username = config["username"]
         self.orgs = config.get("orgs", [])
         self.repo_maintainers = config.get("repos", {})
-        self.repo_dependabot_maintainers = config.get("repos_dependabot", {})
+        self.repo_dependabot_maintainers = config.get("repo_dependabot_maintainers", {})
         self.default_maintainers = config.get("reviewers", [])
         self.trusted = config.get("trusted", [])
 
@@ -312,11 +312,11 @@ class Bot:
     def assign_dependabot_maintainer(self, pr):
         if pr.author != "dependabot[bot]":
             return
-        if pr.repo not in self.repos_dependabot:
+        if pr.repo not in self.repo_dependabot_maintainers:
             log.warning(f"A dependabot PR in {pr.repo} with no assigned maintainer!")
             return
 
-        pr.reviewer = self.repos_dependabot[pr.repo]
+        pr.reviewer = self.repo_dependabot_maintainers[pr.repo]
 
     def handle_pr(self, pr):
         log.info("Looking at: {} ({})".format(pr["title"], pr["html_url"]))

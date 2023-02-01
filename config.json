@@ -71,8 +71,7 @@
         "ping_reviewers_dependabot"
       ],
       "orgs": [ "mendersoftware" ],
-
-      "repos_dependabot" : {
+      "repo_dependabot_maintainers" : {
         "mendersoftware/gui": "mzedel",
         "mendersoftware/integration": "lluiscampos",
         "mendersoftware/meta-mender": "lluiscampos",
