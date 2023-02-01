@@ -84,8 +84,8 @@ class Bot:
         if self.interactive:
             print("I'd like to POST something")
             msg = "" if msg is None else msg
-            msg += "Path: {}".format(path)
-            msg += "Data: {}".format(data)
+            msg += "\nPath: {}".format(path)
+            msg += "\nData: {}".format(data)
             if not confirmation(msg):
                 return False
         r = self.github.post(path, data)
@@ -95,7 +95,7 @@ class Bot:
 
     def comment(self, pr, message):
         path = pr.comments_url
-        pr_string = "PR: {} ({}#{})".format(pr.title, pr.repo, pr.number)
+        pr_string = "PR: {} ({})".format(pr.title, pr.url)
         data = {"body": str(message)}
         commented = self.post(path, data, pr_string)
         if commented:
