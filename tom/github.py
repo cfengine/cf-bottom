@@ -23,7 +23,6 @@ class GitHub:
         }
         self.get_cache = {}
         self.known_repos = known_repos
-        self.reviewer = None
 
     def path(self, path):
         if path.startswith("/"):
@@ -452,6 +451,9 @@ class PR:
         self.commits_url = data["commits_url"]
         self.reviews_url = self.api_url + "/reviews"
         self.requested_reviewers = data["requested_reviewers"]
+
+        # The person which will be pinged for review (based on config)
+        self.reviewer = None
 
         self.created = datetime.datetime.strptime(
             data["created_at"], "%Y-%m-%dT%H:%M:%SZ"
