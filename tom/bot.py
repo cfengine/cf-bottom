@@ -278,7 +278,7 @@ class Bot:
             self.comment(pr, deny)
             return
         body = comment.body.lower()
-        trigger_words = ["jenkins", "pipeline", "build", "trigger"]
+        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger"]
         for word in trigger_words:
             if word.lower() in body:
                 self.trigger_build(pr, comment)

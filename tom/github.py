@@ -2,6 +2,7 @@ import random
 import requests
 import re
 import os
+import sys
 import json
 import datetime
 import logging as log
@@ -37,6 +38,9 @@ class GitHub:
             return self.get_cache[path]
         r = requests.get(path, headers=self.headers)
         log.debug("RESPONSE {}".format(r.status_code))
+
+        if not (200 <= r.status_code < 300):
+            sys.exit("Non-success API response {} for '{}'".format(r.status_code, path))
 
         assert r.status_code >= 200 and r.status_code < 300
         data = r.json()
