@@ -258,6 +258,15 @@ class UpdateChecker:
         (old_version, separator) = self.extract_version_from_filename(dep, old_filename)
         return old_version
 
+    def patch_spec_file(self, spec_file_path, old_version, new_version):
+        try:
+            spec_file = self.buildscripts.get_file(spec_file_path)
+        except:
+            pass
+        else:
+            spec_file = spec_file.replace(old_version, new_version)
+            self.buildscripts.put_file(spec_file_path, spec_file)
+
     def update_single_dep(self, dep):
         """Check if new version of dependency dep was released and create
         commit updating it in *.spec, dist, source, and README.md files
@@ -318,14 +327,16 @@ class UpdateChecker:
         ]
         readme_file = "\n".join(self.readme_lines)
         self.buildscripts.put_file(self.readme_file_path, readme_file)
-        spec_file_path = "deps-packaging/{}/cfbuild-{}.spec".format(dep, dep)
-        try:
-            spec_file = self.buildscripts.get_file(spec_file_path)
-        except:
-            pass
-        else:
-            spec_file = spec_file.replace(old_version, new_version)
-            self.buildscripts.put_file(spec_file_path, spec_file)
+        self.patch_spec_file(
+            "deps-packaging/{}/cfbuild-{}.spec".format(dep, dep),
+            old_version,
+            new_version,
+        )
+        self.patch_spec_file(
+            "deps-packaging/{}/cfbuild-{}-aix.spec".format(dep, dep),
+            old_version,
+            new_version,
+        )
         self.buildscripts.commit(message)
         return message
 
