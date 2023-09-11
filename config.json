@@ -71,8 +71,8 @@
         "report_open_prs",
         "ping_reviewers_dependabot"
       ],
-      "orgs": [ "mendersoftware" ],
-      "repo_dependabot_maintainers" : {
+      "orgs": ["mendersoftware"],
+      "repo_dependabot_maintainers": {
         "mendersoftware/gui": "mzedel",
         "mendersoftware/integration": "lluiscampos",
         "mendersoftware/meta-mender": "lluiscampos",
@@ -84,7 +84,7 @@
         "mendersoftware/mender-dist-packages": "lluiscampos",
         "mendersoftware/mender-demo-artifact": "lluiscampos",
         "mendersoftware/mender-convert": "lluiscampos",
-        "mendersoftware/mender-test-containers": "lluiscampos",
+        "mendersoftware/mender-test-containers": "kjaskiewiczz",
         "mendersoftware/mender-stress-test-client": "lluiscampos",
         "mendersoftware/integration-test-runner": "lluiscampos",
         "mendersoftware/mender-gateway": "lluiscampos",
@@ -98,6 +98,7 @@
         "mendersoftware/deviceconnect": "kjaskiewiczz",
         "mendersoftware/devicemonitor": "kjaskiewiczz",
         "mendersoftware/generate-delta-worker": "kjaskiewiczz",
+        "mendersoftware/go-lib-micro": "kjaskiewiczz",
         "mendersoftware/inventory": "kjaskiewiczz",
         "mendersoftware/inventory-enterprise": "kjaskiewiczz",
         "mendersoftware/iot-manager": "kjaskiewiczz",
