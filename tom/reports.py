@@ -30,7 +30,7 @@ class Reports:
             data["created"] = str(pr.created)
             data["author"] = pr.author
             all.append(data)
-            if datetime.datetime.now() - pr.created < datetime.timedelta(days=21):
+            if datetime.datetime.now() - pr.created < datetime.timedelta(days=30):
                 continue
             if pr.author == "dependabot[bot]":
                 dependabot.append(data)
