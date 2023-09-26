@@ -86,6 +86,25 @@ class UpdateChecker:
         log.debug(pretty(only_deps))
         return only_deps
 
+    def trim_version(self, version, parts, separator=".", out_separator=None):
+        """ "Trims" version by dropping irrelevant parts.
+        Leaves only requested amount of parts. Example:
+        self.trim_version("1.2.3", 2) => "1.2"
+        Args:
+            version - version to work on, represented as string
+            parts - how many parts of version to preserve
+            separator - separator character between version parts,
+                "." by default.
+            out_separator - separator character between version parts
+                _in output_, if differs from input. Equals to separator by default.
+        """
+        if out_separator is None:
+            out_separator = separator
+        in_version_components = version.split(separator)
+        out_version_components = in_version_components[:parts]
+        out_version = out_separator.join(out_version_components)
+        return out_version
+
     def increase_version(self, version, increment, separator="."):
         """increase last part of version - so 1.2.9 becomes 1.2.10
         Args:
@@ -239,6 +258,15 @@ class UpdateChecker:
         (old_version, separator) = self.extract_version_from_filename(dep, old_filename)
         return old_version
 
+    def patch_spec_file(self, spec_file_path, old_version, new_version):
+        try:
+            spec_file = self.buildscripts.get_file(spec_file_path)
+        except:
+            pass
+        else:
+            spec_file = spec_file.replace(old_version, new_version)
+            self.buildscripts.put_file(spec_file_path, spec_file)
+
     def update_single_dep(self, dep):
         """Check if new version of dependency dep was released and create
         commit updating it in *.spec, dist, source, and README.md files
@@ -269,6 +297,10 @@ class UpdateChecker:
             return False
         new_filename = old_filename.replace(old_version, new_version)
         new_url = old_url.replace(old_version, new_version)
+        if dep == "libxml2":
+            new_url = new_url.replace(
+                self.trim_version(old_version, 2), self.trim_version(new_version, 2)
+            )
         sha256sum = self.checkfile(new_url, True)
         if not sha256sum:
             message = "Update {} from {} to {} FAILED to download {}".format(
@@ -282,6 +314,10 @@ class UpdateChecker:
         dist_file = "{}  {}".format(sha256sum, new_filename)
         self.buildscripts.put_file(dist_file_path, dist_file + "\n")
         source_file = source_file.replace(old_version, new_version)
+        if dep == "libxml2":
+            source_file = source_file.replace(
+                self.trim_version(old_version, 2), self.trim_version(new_version, 2)
+            )
         self.buildscripts.put_file(source_file_path, source_file + "\n")
         self.readme_lines = [
             self.maybe_replace(
@@ -291,14 +327,16 @@ class UpdateChecker:
         ]
         readme_file = "\n".join(self.readme_lines)
         self.buildscripts.put_file(self.readme_file_path, readme_file)
-        spec_file_path = "deps-packaging/{}/cfbuild-{}.spec".format(dep, dep)
-        try:
-            spec_file = self.buildscripts.get_file(spec_file_path)
-        except:
-            pass
-        else:
-            spec_file = spec_file.replace(old_version, new_version)
-            self.buildscripts.put_file(spec_file_path, spec_file)
+        self.patch_spec_file(
+            "deps-packaging/{}/cfbuild-{}.spec".format(dep, dep),
+            old_version,
+            new_version,
+        )
+        self.patch_spec_file(
+            "deps-packaging/{}/cfbuild-{}-aix.spec".format(dep, dep),
+            old_version,
+            new_version,
+        )
         self.buildscripts.commit(message)
         return message
 
