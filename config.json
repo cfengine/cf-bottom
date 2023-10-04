@@ -8,12 +8,10 @@
         "vpodzime",
         "craigcomstock",
         "olehermanse",
-        "Lex-2008",
         "aleksandrychev",
         "chiachenglu",
         "oleorhagen",
         "lluiscampos",
-        "0lmi",
         "larsewi"
       ],
       "reviewers": ["olehermanse", "vpodzime"],
@@ -32,7 +30,6 @@
         "tag_builds"
       ],
       "banned_emails": {
-        "karl": "551bd622cc706873476be5b0d9ecd733f8e24585418fcf201b4c238c6125a89a",
         "craig": "5a09cedd03ac8f6625afbf82320d9182ab56e507311f43d02aace8f5fe6d93f5",
         "igor": "56d20f3d01cf0c08db466fb629187ff41a30bb170623251b7e14e32c3c1a67a4",
         "vratislav": "54a458f06da35064562b258e52f5b233dbbd561a51816097b7bce1a306775d05",
@@ -56,12 +53,12 @@
         "cfengine/enterprise": ["olehermanse", "vpodzime", "craigcomstock"],
         "cfengine/nova": ["olehermanse", "vpodzime", "craigcomstock"],
         "cfengine/masterfiles": ["craigcomstock", "nickanderson"],
-        "cfengine/buildscripts": ["craigcomstock", "Lex-2008"],
+        "cfengine/buildscripts": ["craigcomstock"],
         "cfengine/documentation": ["nickanderson", "craigcomstock"],
         "cfengine/contrib": ["nickanderson"],
         "cfengine/cf-bottom": ["olehermanse", "vpodzime", "cf-bottom"],
         "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"],
-        "cfengine/system-testing": ["Lex-2008", "craigcomstock", "vpodzime"]
+        "cfengine/system-testing": ["craigcomstock", "vpodzime"]
       }
     },
     {
