@@ -14,7 +14,7 @@
         "lluiscampos",
         "larsewi"
       ],
-      "reviewers": ["olehermanse", "vpodzime"],
+      "reviewers": ["larsewi", "craigcomstock"],
       "jenkins": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
       "bot_features": [
@@ -49,14 +49,14 @@
         "system-testing"
       ],
       "repos": {
-        "cfengine/core": ["olehermanse", "vpodzime"],
-        "cfengine/enterprise": ["olehermanse", "vpodzime", "craigcomstock"],
-        "cfengine/nova": ["olehermanse", "vpodzime", "craigcomstock"],
+        "cfengine/core": ["larsewi", "craigcomstock"],
+        "cfengine/enterprise": ["larsewi", "craigcomstock"],
+        "cfengine/nova": ["larsewi", "craigcomstock"],
         "cfengine/masterfiles": ["craigcomstock", "nickanderson"],
         "cfengine/buildscripts": ["craigcomstock"],
         "cfengine/documentation": ["nickanderson", "craigcomstock"],
         "cfengine/contrib": ["nickanderson"],
-        "cfengine/cf-bottom": ["olehermanse", "vpodzime", "cf-bottom"],
+        "cfengine/cf-bottom": ["olehermanse", "larsewi", "nickanderson"],
         "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"],
         "cfengine/system-testing": ["craigcomstock", "vpodzime"]
       }
