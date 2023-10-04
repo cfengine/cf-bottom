@@ -8,15 +8,13 @@
         "vpodzime",
         "craigcomstock",
         "olehermanse",
-        "Lex-2008",
         "aleksandrychev",
         "chiachenglu",
         "oleorhagen",
         "lluiscampos",
-        "0lmi",
         "larsewi"
       ],
-      "reviewers": ["olehermanse", "vpodzime"],
+      "reviewers": ["larsewi", "craigcomstock"],
       "jenkins": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
       "bot_features": [
@@ -32,7 +30,6 @@
         "tag_builds"
       ],
       "banned_emails": {
-        "karl": "551bd622cc706873476be5b0d9ecd733f8e24585418fcf201b4c238c6125a89a",
         "craig": "5a09cedd03ac8f6625afbf82320d9182ab56e507311f43d02aace8f5fe6d93f5",
         "igor": "56d20f3d01cf0c08db466fb629187ff41a30bb170623251b7e14e32c3c1a67a4",
         "vratislav": "54a458f06da35064562b258e52f5b233dbbd561a51816097b7bce1a306775d05",
@@ -52,16 +49,16 @@
         "system-testing"
       ],
       "repos": {
-        "cfengine/core": ["olehermanse", "vpodzime"],
-        "cfengine/enterprise": ["olehermanse", "vpodzime", "craigcomstock"],
-        "cfengine/nova": ["olehermanse", "vpodzime", "craigcomstock"],
+        "cfengine/core": ["larsewi", "craigcomstock"],
+        "cfengine/enterprise": ["larsewi", "craigcomstock"],
+        "cfengine/nova": ["larsewi", "craigcomstock"],
         "cfengine/masterfiles": ["craigcomstock", "nickanderson"],
-        "cfengine/buildscripts": ["craigcomstock", "Lex-2008"],
+        "cfengine/buildscripts": ["craigcomstock"],
         "cfengine/documentation": ["nickanderson", "craigcomstock"],
         "cfengine/contrib": ["nickanderson"],
-        "cfengine/cf-bottom": ["olehermanse", "vpodzime", "cf-bottom"],
+        "cfengine/cf-bottom": ["olehermanse", "larsewi", "nickanderson"],
         "cfengine/mission-portal": ["craigcomstock", "aleksandrychev"],
-        "cfengine/system-testing": ["Lex-2008", "craigcomstock", "vpodzime"]
+        "cfengine/system-testing": ["craigcomstock", "vpodzime"]
       }
     },
     {
@@ -111,6 +108,32 @@
         "mendersoftware/useradm-enterprise": "kjaskiewiczz",
         "mendersoftware/workflows": "kjaskiewiczz",
         "mendersoftware/workflows-enterprise": "kjaskiewiczz"
+      }
+    },
+    {
+      "username": "cf-bottom",
+      "orgs": ["NorthernTechHQ"],
+      "secrets": "nt-secrets.json",
+      "reviewers": ["olehermanse", "oldgiova", "alfrunes"],
+      "bot_features": [
+        "report_open_prs",
+        "check_commit_emails",
+        "ping_reviewers_dependabot"
+      ],
+      "banned_emails": {
+        "craig": "5a09cedd03ac8f6625afbf82320d9182ab56e507311f43d02aace8f5fe6d93f5",
+        "igor": "56d20f3d01cf0c08db466fb629187ff41a30bb170623251b7e14e32c3c1a67a4",
+        "vratislav": "54a458f06da35064562b258e52f5b233dbbd561a51816097b7bce1a306775d05",
+        "ole": "94534ae37a66ade3bae446c81cc15433efcda3a8516ffe6b2c2e0f6dd70127dd",
+        "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
+      },
+      "repos": {
+        "NorthernTechHQ/alvaldi-docs": ["olehermanse"],
+        "NorthernTechHQ/nt-connect": ["olehermanse", "alfrunes"]
+      },
+      "repo_dependabot_maintainers": {
+        "NorthernTechHQ/alvaldi-gui": "aleksandrychev",
+        "NorthernTechHQ/nt-connect": "alfrunes"
       }
     }
   ]
