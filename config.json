@@ -5,6 +5,7 @@
       "secrets": "cfengine-secrets.json",
       "trusted": [
         "nickanderson",
+        "mineralsfree",
         "vpodzime",
         "craigcomstock",
         "olehermanse",
