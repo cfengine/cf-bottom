@@ -63,7 +63,7 @@ class PackageMapper:
         dispatcher.register_command(
             keyword="packages_mapping",
             callback=lambda branches: self.run(branches),
-            parameter_name="branches",
+            parameter_name="branches or versions",
             short_help="Add packages to packages_mapping.json",
             long_help="Scan releases.json for last release of given branches and add all of their packages to packages_mapping file",
         )
@@ -119,31 +119,39 @@ class PackageMapper:
                 if value_type == "version":
                     version = value
                     branch = re.sub("^(\\d+\\.\\d+\\.).*", "\\1x", version)
-                    release_url = "https://cfengine.com/release-data/%s/%s.json" % (
-                        product,
-                        version,
-                    )
                 else:
                     branch = value
-                    releases_url = (
-                        "https://cfengine.com/release-data/%s/releases.json" % product
+
+                releases_url = (
+                    "https://cfengine.com/release-data/%s/releases.json" % product
+                )
+                releases_request = requests.get(releases_url)
+                if not releases_request.ok:
+                    raise URLDownloadFailureException(
+                        "failed to download %s, return code %d"
+                        % (releases_url, releases_request.status_code)
                     )
-                    releases_request = requests.get(releases_url)
-                    if not releases_request.ok:
-                        raise URLDownloadFailureException(
-                            "failed to download %s, return code %d"
-                            % (releases_url, releases_request.status_code)
-                        )
+                try:
+                    releases_data = releases_request.json()
+                except json.decoder.JSONDecodeError as e:
+                    raise JSONParsingError(
+                        "file %s is not a valid JSON" % releases_url
+                    ) from e
+                if "releases" not in releases_data:
+                    raise JSONStructureError('no "releases" in %s JSON' % releases_url)
+                if value_type == "version":
                     try:
-                        releases_data = releases_request.json()
-                    except json.decoder.JSONDecodeError as e:
-                        raise JSONParsingError(
-                            "file %s is not a valid JSON" % releases_url
-                        ) from e
-                    if "releases" not in releases_data:
-                        raise JSONStructureError(
-                            'no "releases" in %s JSON' % releases_url
+                        release_url = next(
+                            (release["URL"])
+                            for release in releases_data["releases"]
+                            if release["version"] == version
                         )
+                    except StopIteration as e:
+                        raise JSONStructureError(
+                            'no release with "version"=="%s" in %s JSON'
+                            % (version, releases_url)
+                        ) from e
+                else:
                     try:
                         release_url, version = next(
                             (release["URL"], release["version"])
