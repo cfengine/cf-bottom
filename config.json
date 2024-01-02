@@ -65,6 +65,7 @@
     {
       "username": "mender-test-bot",
       "secrets": "mender-secrets.json",
+      "orgs": ["mendersoftware"],
       "bot_features": [
         "report_open_prs"
       ]
