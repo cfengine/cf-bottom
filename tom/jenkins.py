@@ -99,6 +99,7 @@ class Jenkins:
             "enterprise",
             "masterfiles",
             "nova",
+            "misc",
         ]
         if "fast-build-and-deploy-docs" not in path:
             repos_accepted.extend(
