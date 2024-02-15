@@ -1,9 +1,10 @@
 {
   "bots": [
     {
+      "orgs": ["cfengine"],
       "username": "cf-bottom",
       "secrets": "cfengine-secrets.json",
-      "trusted": [
+      "trusted_gh_users_to_start_jenkins_builds": [
         "nickanderson",
         "mineralsfree",
         "vpodzime",
@@ -16,11 +17,11 @@
         "larsewi"
       ],
       "reviewers": ["larsewi", "craigcomstock"],
-      "jenkins": "https://ci.cfengine.com/",
+      "jenkins_url": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
       "bot_features": [
         "check_commit_emails",
-        "ping_reviewers",
+        "ping_reviewer_for_new_pr_after_1_day",
         "trigger_jenkins_from_gh_comments",
         "approve_prs",
         "report_open_prs",
@@ -37,7 +38,6 @@
         "ole": "94534ae37a66ade3bae446c81cc15433efcda3a8516ffe6b2c2e0f6dd70127dd",
         "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
       },
-      "orgs": ["cfengine"],
       "jenkins_repos": [
         "libntech",
         "core",
@@ -49,7 +49,7 @@
         "documentation",
         "system-testing"
       ],
-      "repos": {
+      "repo_maintainers": {
         "cfengine/core": ["larsewi", "craigcomstock"],
         "cfengine/enterprise": ["larsewi", "craigcomstock"],
         "cfengine/nova": ["larsewi", "craigcomstock"],
@@ -63,23 +63,49 @@
       }
     },
     {
+      "orgs": ["mendersoftware"],
       "username": "mender-test-bot",
       "secrets": "mender-secrets.json",
-      "orgs": ["mendersoftware"],
       "bot_features": [
         "report_open_prs"
       ]
     },
     {
-      "username": "cf-bottom",
       "orgs": ["NorthernTechHQ"],
-      "secrets": "nt-secrets.json",
+      "username": "cf-bottom",
+      "secrets": "cfengine-secrets.json",
       "reviewers": ["olehermanse", "oldgiova", "alfrunes"],
       "bot_features": [
         "report_open_prs",
         "check_commit_emails",
-        "ping_reviewers_dependabot"
+        "trigger_jenkins_from_gh_comments",
+        "ping_reviewer_dependabot"
       ],
+      "trusted_gh_users_to_start_jenkins_builds": [
+        "nickanderson",
+        "mineralsfree",
+        "vpodzime",
+        "craigcomstock",
+        "olehermanse",
+        "aleksandrychev",
+        "chiachenglu",
+        "oleorhagen",
+        "lluiscampos",
+        "larsewi"
+      ],
+      "jenkins_repos": [
+        "libntech",
+        "core",
+        "enterprise",
+        "nova",
+        "masterfiles",
+        "mission-portal",
+        "buildscripts",
+        "documentation",
+        "system-testing"
+      ],
+      "jenkins_url": "https://ci.cfengine.com/",
+      "jenkins_job": "pr-pipeline",
       "banned_emails": {
         "craig": "5a09cedd03ac8f6625afbf82320d9182ab56e507311f43d02aace8f5fe6d93f5",
         "igor": "56d20f3d01cf0c08db466fb629187ff41a30bb170623251b7e14e32c3c1a67a4",
@@ -87,7 +113,8 @@
         "ole": "94534ae37a66ade3bae446c81cc15433efcda3a8516ffe6b2c2e0f6dd70127dd",
         "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
       },
-      "repos": {
+      "repo_maintainers": {
+        "NorthernTechHQ/libntech": ["larsewi", "craigcomstock"],
         "NorthernTechHQ/alvaldi-docs": ["olehermanse"],
         "NorthernTechHQ/nt-connect": ["olehermanse", "alfrunes"]
       },

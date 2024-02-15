@@ -230,9 +230,9 @@ test_jenkins_crumb = "test-jenkins-crumb"
 config = {
     "response_choices": ["Predictably"],
     "username": bot_username,
-    "jenkins": jenkins_base_url,
+    "jenkins_url": jenkins_base_url,
     "jenkins_job": jenkins_default_job,
-    "trusted": [trusted_author],
+    "trusted_gh_users_to_start_jenkins_builds": [trusted_author],
     "secrets_data": {
         "GITHUB_TOKEN": test_github_token,
         "JENKINS_USER": test_jenkins_user,

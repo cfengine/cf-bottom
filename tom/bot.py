@@ -30,19 +30,21 @@ class Bot:
 
         self.username = config["username"]
         self.orgs = config.get("orgs", [])
-        self.repo_maintainers = config.get("repos", {})
+        self.repo_maintainers = config.get("repo_maintainers", {})
         self.repo_dependabot_maintainers = config.get("repo_dependabot_maintainers", {})
         self.default_maintainers = config.get("reviewers", [])
-        self.trusted = config.get("trusted", [])
+        self.trusted_gh_users_to_start_jenkins_builds = config.get(
+            "trusted_gh_users_to_start_jenkins_builds", []
+        )
 
         self.jenkins_repos = config.get("jenkins_repos", [])
         banned_emails = config.get("banned_emails", {})
         self.banned_emails = [v for v in banned_emails.values()]
 
         self.jenkins = None
-        if "jenkins" in config:
+        if "jenkins_url" in config:
             self.jenkins = Jenkins(
-                config["jenkins"], config["jenkins_job"], secrets, self.username
+                config["jenkins_url"], config["jenkins_job"], secrets, self.username
             )
 
         self.github = GitHub(secrets["GITHUB_TOKEN"], self.username, self.jenkins_repos)
@@ -273,7 +275,7 @@ class Bot:
         deny = "@{} : I'm sorry, I cannot do that. @olehermanse please help.".format(
             comment.author
         )
-        if comment.author not in self.trusted:
+        if comment.author not in self.trusted_gh_users_to_start_jenkins_builds:
             print("Denying mention from {}".format(comment.author))
             self.comment(pr, deny)
             return
@@ -322,13 +324,13 @@ class Bot:
         log.info("Looking at: {} ({})".format(pr["title"], pr["html_url"]))
 
         pr = PR(pr, self.github)
-        if "ping_reviewers" in self.bot_features:
+        if "ping_reviewer_for_new_pr_after_1_day" in self.bot_features:
             self.find_reviewers(pr)
-        if "ping_reviewers_dependabot" in self.bot_features:
+        if "ping_reviewer_dependabot" in self.bot_features:
             self.assign_dependabot_maintainer(pr)
         if (
-            "ping_reviewers" in self.bot_features
-            or "ping_reviewers_dependabot" in self.bot_features
+            "ping_reviewer_for_new_pr_after_1_day" in self.bot_features
+            or "ping_reviewer_dependabot" in self.bot_features
         ):
             self.ping_reviewer(pr)
         if (
