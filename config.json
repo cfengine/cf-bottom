@@ -94,7 +94,15 @@
         "larsewi"
       ],
       "jenkins_repos": [
-        "libntech"
+        "libntech",
+        "core",
+        "enterprise",
+        "nova",
+        "masterfiles",
+        "mission-portal",
+        "buildscripts",
+        "documentation",
+        "system-testing"
       ],
       "jenkins_url": "https://ci.cfengine.com/",
       "jenkins_job": "pr-pipeline",
