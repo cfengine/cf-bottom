@@ -73,13 +73,31 @@
     {
       "username": "cf-bottom",
       "orgs": ["NorthernTechHQ"],
-      "secrets": "nt-secrets.json",
+      "secrets": "cfengine-secrets.json",
       "reviewers": ["olehermanse", "oldgiova", "alfrunes"],
       "bot_features": [
         "report_open_prs",
         "check_commit_emails",
+        "trigger_jenkins_from_gh_comments",
         "ping_reviewers_dependabot"
       ],
+      "trusted": [
+        "nickanderson",
+        "mineralsfree",
+        "vpodzime",
+        "craigcomstock",
+        "olehermanse",
+        "aleksandrychev",
+        "chiachenglu",
+        "oleorhagen",
+        "lluiscampos",
+        "larsewi"
+      ],
+      "jenkins_repos": [
+        "libntech"
+      ],
+      "jenkins": "https://ci.cfengine.com/",
+      "jenkins_job": "pr-pipeline",
       "banned_emails": {
         "craig": "5a09cedd03ac8f6625afbf82320d9182ab56e507311f43d02aace8f5fe6d93f5",
         "igor": "56d20f3d01cf0c08db466fb629187ff41a30bb170623251b7e14e32c3c1a67a4",
@@ -88,6 +106,7 @@
         "ole1": "23d337c7f69fee4a04dca86de41cf737a0c585029864eab34aa1a5390aa7b845"
       },
       "repos": {
+        "NorthernTechHQ/libntech": ["larsewi", "craigcomstock"],
         "NorthernTechHQ/alvaldi-docs": ["olehermanse"],
         "NorthernTechHQ/nt-connect": ["olehermanse", "alfrunes"]
       },
