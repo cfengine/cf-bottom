@@ -1,20 +1,18 @@
 import re
-import sys
 import random
-import json
 import datetime
 import logging as log
 from copy import copy
 from typing import Dict
 
-from tom.github import GitHub, GitHubInterface, PR, Comment
+from tom.github import GitHub, GitHubInterface, PR
 from tom.jenkins import Jenkins
 from tom.slack import Slack, CommandDispatcher
 from tom.dependencies import UpdateChecker
 from tom.changelog import ChangelogGenerator
 from tom.packages import PackageMapper
 from tom.tag import Tagger
-from tom.utils import confirmation, pretty, email_sha256, write_json
+from tom.utils import confirmation, email_sha256
 
 
 class Bot:
