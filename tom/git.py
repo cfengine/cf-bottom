@@ -140,9 +140,13 @@ class GitRepo:
         """Creates commit with message"""
         self.run_command("commit", "-m", message, "--allow-empty")
 
-    def push(self, ref=None, remote="origin"):
+    def push(self, ref=None, remote="origin", upstream=True):
         """Pushes local branch or tag to remote repo, optionally also setting it as upstream"""
-        if ref:
-            self.run_command("push", remote, ref)
-        else:
-            self.run_command("push", remote)
+        cmd = ["push"]
+        if upstream:
+            cmd.append("-u")
+        cmd.append(remote)
+        if ref is not None:
+            cmd.append(ref)
+
+        self.run_command(*cmd)
