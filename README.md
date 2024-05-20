@@ -5,6 +5,21 @@ I trigger pull requests when someone mentions me in a GitHub Pull Request.
 
 ## Usage
 
+### Github Pull Requests
+
+Mention Tom in a comment with `@cf-bottom` and then include some trigger keywords to start a jenkins/CI build.
+
+In `tom/bot.py`:
+
+```python
+        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger"]
+```
+
+Other keywords available in comments are:
+
+* `exotic` - includes exotics platforms such as AIX, HP/UX, Solaris
+* `no test` - don't run tests. This is useful if you only need packages. Tests are resource intensive so use this option often if it makes sense.
+
 ### Command line
 
 If you have valid config and secrets in the current working directory, you can run:
