@@ -123,6 +123,7 @@ class GitRepo:
                 self.run_command("checkout", branch)
             # ensure we're on the tip of ref
             self.run_command("reset", "--hard", "FETCH_HEAD")
+        self.run_command("submodule", "update", "--init")
 
     def get_file(self, path):
         """Returns contents of a file as a single string"""
