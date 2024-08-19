@@ -20,6 +20,12 @@ Other keywords available in comments are:
 * `exotic` - includes exotics platforms such as AIX, HP/UX, Solaris
 * `no test` - don't run tests. This is useful if you only need packages. Tests are resource intensive so use this option often if it makes sense.
 
+### Install dependencies and setup local venv
+
+python3 -m venv venv
+. venv/bin/activate
+pip install -r requirements.txt
+
 ### Command line
 
 If you have valid config and secrets in the current working directory, you can run:
