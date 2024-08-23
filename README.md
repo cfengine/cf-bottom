@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 ### Command line
 
-If you have valid config and secrets in the current working directory, you can run:
+If you have valid config and secrets in the current working directory, you can run the PR checker feature with:
 
 ```
 $ python3 -m tom --directory . --log-level info --interactive
@@ -51,6 +51,21 @@ tom@jenkins:/home/tom$ python3 self/tom --log-level INFO
 [INFO] Fetching pull requests for cf-bottom/self
 [...]
 ```
+
+### Update Dependencies
+
+Initially and currently tom is designed to chat via slack to update dependencies but we didn't finish the integration so this must be run on the command line instead.
+Given that secrets are present as above, run this command:
+
+```
+python3 -m tom -i -t cf-bottom -l info
+
+<@cf-bottom> deps: 3.21.x
+```
+
+Note: in order to submit the PR properly you must edit tom/bot.py and replace Lex-2008 with your github username. https://northerntech.atlassian.net/browse/ENT-12126
+
+Note that this is referred to in the release process doc: https://github.com/NorthernTechHQ/infra/blob/master/files/buildcache/release-scripts/RELEASE_PROCESS.org
 
 ### CFEngine policy
 
