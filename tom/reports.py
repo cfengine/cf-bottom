@@ -32,7 +32,11 @@ class Reports:
             all.append(data)
             if datetime.datetime.now() - pr.created < datetime.timedelta(days=30):
                 continue
-            if pr.author == "dependabot[bot]":
+            if pr.author == "dependabot[bot]" and not pr.url.startswith(
+                "https://github.com/mendersoftware/reporting/pull/"
+            ):
+                # TODO: Security exception for mendersoftware/reporting
+                #       https://northerntech.atlassian.net/browse/SEC-1311
                 dependabot.append(data)
             old.append(data)
 
