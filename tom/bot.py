@@ -230,7 +230,10 @@ class Bot:
             exotics = True
             description = "(with exotics)"
         # flag if docs build is requested
-        docs = pr.short_repo_name.startswith("documentation")
+        if "docs" in comment or pr.short_repo_name.startswith("documentation"):
+            docs = True
+        else:
+            docs = False
 
         no_tests = "no test" in comment
         if no_tests:
