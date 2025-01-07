@@ -163,7 +163,7 @@ class ChangelogGenerator:
                 + ":\n"
                 + changelog_enterprise
                 + "\n"
-                + "        Packaging changes:\n"
+                + "\tPackaging changes:\\n"
                 + changelog_buildscripts
                 + "\n"
                 + old_changelog
