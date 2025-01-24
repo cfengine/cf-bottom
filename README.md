@@ -71,19 +71,22 @@ Note that this is referred to in the release process doc: https://github.com/Nor
 
 See the [example policy](/tom.cf) for an automated way to update and run Tom.
 
-To disable policy when testing, you can delete this flag file:
+To enable tom, add the class `default:tom_enabled` via CMDB or augments.
+
+To disable running for testing/debugging, create this flag file:
 
 ```
 $ cd /home/tom
-$ rm TOM_ENABLE
+$ touch TOM_DISABLED
 ```
 
-The `TOM_ENABLE` file is checked by the policy, not the python code.
+The `TOM_DISABLED` file is checked by the policy, not the python code.
+
 To re-enable:
 
 ```
 $ cd /home/tom
-$ touch TOM_ENABLE
+$ rm -f TOM_DISABLED
 ```
 
 ## Config
