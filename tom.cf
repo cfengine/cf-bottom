@@ -107,11 +107,12 @@ bundle agent tom_main
        if => filesexist( @(config_files) );
 
     vars:
-        "config_files" slist => {"/home/tom/config.json",
-                                 "/home/tom/TOM_ENABLE"};
+        "config_files" slist => {"/home/tom/config.json"};
 
     classes:
         "has_tom_config" expression => filesexist(@(config_files));
+        "tom_enabled" expression => and("default:tom_enabled",
+                                        not(fileexists("/home/tom/TOM_DISABLED")));
 
     methods:
         has_tom_config::
@@ -121,10 +122,12 @@ bundle agent tom_main
                 usebundle => "tom_update";
             "Install"
                 usebundle => "tom_install";
+
+        tom_enabled::
             "Run"
                 usebundle => "tom_run";
     reports:
-        inform_mode.!has_tom_config::
+        inform_mode.!has_tom_config.!tom_enabled::
             "Skipping execution, config.json or TOM_ENABLE missing in /home/tom";
 }
 
