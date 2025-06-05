@@ -243,8 +243,8 @@ class Bot:
         label_match = re.search(r"label\s*([^\n]+)", comment.body.lower())
         if label_match:
             labels_string = label_match.group(1).strip()
-            # Assign the entire captured string to LABEL_EXPRESSION
-            additional_params["LABEL_EXPRESSION"] = labels_string
+            # Assign the entire captured string to CONFIGURATIONS_FILTER
+            additional_params["CONFIGURATIONS_FILTER"] = labels_string
 
         if self.interactive:
             msg = []
