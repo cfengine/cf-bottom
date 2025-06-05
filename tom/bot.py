@@ -226,18 +226,30 @@ class Bot:
                 prs[repo_name] = pr.merge_with[repo_name]
         description = ""
         exotics = False
-        if "exotic" in comment:
+        if "exotic" in comment.body.lower():
             exotics = True
             description = "(with exotics)"
         # flag if docs build is requested
-        if "docs" in comment or pr.short_repo_name.startswith("documentation"):
+        if "docs" in comment.body.lower() or pr.short_repo_name.startswith("documentation"):
             docs = True
         else:
             docs = False
 
-        no_tests = "no test" in comment
+        no_tests = "no test" in comment.body.lower()
         if no_tests:
             description += " [NO TESTS]"
+
+        additional_params = {}
+        label_match = re.search(r"label:\s*([^\n]+)", comment.body.lower())
+        if label_match:
+            labels_string = label_match.group(1).strip()
+            for part in labels_string.split(','):
+                part = part.strip()
+                if '=' in part:
+                    key, value = part.split('=', 1)
+                    additional_params[key.strip().upper()] = value.strip()
+                elif part:
+                    additional_params[part.strip().upper()] = "true"
 
         if self.interactive:
             msg = []
@@ -246,6 +258,8 @@ class Bot:
             msg.append("PRs: {}".format(prs))
             msg.append("EXOTICS: {}".format(exotics))
             msg.append("NO_TESTS: {}".format(no_tests))
+            if additional_params:
+                msg.append("ADDITIONAL PARAMS: {}".format(additional_params))
             msg = "\n".join(msg)
             if not confirmation(msg):
                 return
@@ -258,6 +272,7 @@ class Bot:
             comment.author,
             docs,
             no_tests,
+            additional_params=additional_params,
         )
 
         queue_url = headers["Location"]
@@ -276,7 +291,7 @@ class Bot:
             self.comment(pr, deny)
             return
         body = comment.body.lower()
-        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger"]
+        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger", "label"]
         for word in trigger_words:
             if word.lower() in body:
                 self.trigger_build(pr, comment)

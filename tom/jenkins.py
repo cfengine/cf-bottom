@@ -55,6 +55,7 @@ class Jenkins:
         user=None,
         docs=False,
         no_tests=False,
+        additional_params: Dict[str, str] = None,
     ):
         params = {}
         need_slow_build = any(
@@ -129,6 +130,11 @@ class Jenkins:
                 param_name = param_name.replace("DOCUMENTATION", "DOCS")
                 param_name = param_name.replace("GENERATOR", "GEN")
                 params[param_name] = str(prs[repo])
+
+        if additional_params:
+            for key, value in additional_params.items():
+                params[key] = value
+
         params["BUILD_DESC"] = description
         log.info(
             "Triggering build with params: "
