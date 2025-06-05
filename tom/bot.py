@@ -240,7 +240,7 @@ class Bot:
             description += " [NO TESTS]"
 
         additional_params = {}
-        label_match = re.search(r"label\s*([^\n]+)", comment.body.lower())
+        label_match = re.search(r"label\s*([^\n]+);", comment.body.lower())
         if label_match:
             labels_string = label_match.group(1).strip()
             # Assign the entire captured string to CONFIGURATIONS_FILTER
