@@ -243,13 +243,8 @@ class Bot:
         label_match = re.search(r"label\s*([^\n]+)", comment.body.lower())
         if label_match:
             labels_string = label_match.group(1).strip()
-            for part in labels_string.split(','):
-                part = part.strip()
-                if '=' in part:
-                    key, value = part.split('=', 1)
-                    additional_params[key.strip().upper()] = value.strip()
-                elif part:
-                    additional_params[part.strip().upper()] = "true"
+            # Assign the entire captured string to LABEL_EXPRESSION
+            additional_params["LABEL_EXPRESSION"] = labels_string
 
         if self.interactive:
             msg = []
