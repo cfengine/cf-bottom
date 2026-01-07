@@ -14,7 +14,8 @@
         "chiachenglu",
         "lluiscampos",
         "victormlg",
-        "larsewi"
+        "larsewi",
+        "simonthalvorsen"
       ],
       "reviewers": ["larsewi", "craigcomstock"],
       "jenkins_url": "https://ci.cfengine.com/",
