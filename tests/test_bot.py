@@ -109,6 +109,40 @@ def test_notest_build():
     )
 
 
+def test_selenium_build():
+    github_requests, jenkins_requests = _trigger_build(
+        repo="core",
+        prs={"core": 42, "nova": 43},
+        comment="@cf-bottom selenium",
+    )
+    jenkins_requests.post.assert_called_once_with(
+        "https://ci.cfengine.com/job/pr-pipeline/buildWithParameters/api/json",
+        data={
+            "CORE_REV": "42",
+            "NOVA_REV": "43",
+            "BASE_BRANCH": "master",
+            "CONFIGURATIONS_FILTER": 'label == "PACKAGES_HUB_x86_64_linux_redhat_9"',
+            "NO_TESTS": True,
+            "NO_ACCEPTANCE_TESTS": True,
+            "NO_DEPLOYMENT_TESTS": True,
+            "NO_SLOW_DEPLOYMENT_TESTS": True,
+            "NO_FR_TESTS": True,
+            "NO_STATIC_CHECKS": True,
+            "RUN_SELENIUM_TESTS": True,
+            "BUILD_DESC": "Test PR Title @test-trusted-author (core#42 nova#43 master) [SELENIUM]",
+        },
+        headers={"Jenkins-Crumb": "test-jenkins-crumb"},
+        auth=ANY,
+    )
+    github_requests.post.assert_called_once_with(
+        "https://github.com/cfengine/core/pulls/42/comment_reference",
+        headers={"Authorization": "token test-github-token", "User-Agent": "cf-bottom"},
+        json={
+            "body": "Predictably, I triggered a build:\n\n[![Build Status](https://ci.cfengine.com//buildStatus/icon?job=pr-pipeline&build=22)](https://ci.cfengine.com//job/pr-pipeline/22/)\n\n [SELENIUM]\n\n**Jenkins:** https://ci.cfengine.com/job/pr-pipeline/22\n\n**Packages:** http://buildcache.cfengine.com/packages/testing-pr/jenkins-pr-pipeline-22/"
+        },
+    )
+
+
 def test_all_options_build():
     github_requests, jenkins_requests = _trigger_build(
         repo="documentation",

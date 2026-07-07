@@ -55,6 +55,7 @@ class Jenkins:
         user=None,
         docs=False,
         no_tests=False,
+        selenium=False,
     ):
         params = {}
         need_slow_build = any(
@@ -131,6 +132,21 @@ class Jenkins:
                 param_name = param_name.replace("DOCUMENTATION", "DOCS")
                 param_name = param_name.replace("GENERATOR", "GEN")
                 params[param_name] = str(prs[repo])
+        if selenium:
+            # We need to run selenium tests on the hub rhel 9 package,
+            # so add only it to the filter to avoid building packages
+            # for other platforms that we will not use.
+            params["CONFIGURATIONS_FILTER"] = (
+                'label == "PACKAGES_HUB_x86_64_linux_redhat_9"'
+            )
+            params["NO_TESTS"] = True
+            params["NO_ACCEPTANCE_TESTS"] = True
+            params["NO_DEPLOYMENT_TESTS"] = True
+            params["NO_SLOW_DEPLOYMENT_TESTS"] = True
+            params["NO_FR_TESTS"] = True
+            params["NO_STATIC_CHECKS"] = True
+            params["RUN_SELENIUM_TESTS"] = True
+            description += " [SELENIUM]"
         params["BUILD_DESC"] = description
         log.info(
             "Triggering build with params: "

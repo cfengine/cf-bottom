@@ -12,13 +12,14 @@ Mention Tom in a comment with `@cf-bottom` and then include some trigger keyword
 In `tom/bot.py`:
 
 ```python
-        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger"]
+        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger", "selenium"]
 ```
 
 Other keywords available in comments are:
 
 * `exotic` - includes exotics platforms such as AIX, HP/UX, Solaris
 * `no test` - don't run tests. This is useful if you only need packages. Tests are resource intensive so use this option often if it makes sense.
+* `selenium` - run only Selenium tests on RHEL 9 Hub packages (skips all other tests and static checks).
 
 ### Install dependencies and setup local venv
 
