@@ -239,6 +239,10 @@ class Bot:
         if no_tests:
             description += " [NO TESTS]"
 
+        selenium = "selenium" in comment
+        if selenium:
+            description += " [SELENIUM]"
+
         if self.interactive:
             msg = []
             msg.append(str(comment))
@@ -246,6 +250,7 @@ class Bot:
             msg.append("PRs: {}".format(prs))
             msg.append("EXOTICS: {}".format(exotics))
             msg.append("NO_TESTS: {}".format(no_tests))
+            msg.append("SELENIUM: {}".format(selenium))
             msg = "\n".join(msg)
             if not confirmation(msg):
                 return
@@ -258,6 +263,7 @@ class Bot:
             comment.author,
             docs,
             no_tests,
+            selenium,
         )
 
         queue_url = headers["Location"]
@@ -276,7 +282,7 @@ class Bot:
             self.comment(pr, deny)
             return
         body = comment.body.lower()
-        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger"]
+        trigger_words = ["jenkins", "pipeline", "build", "test", "trigger", "selenium"]
         for word in trigger_words:
             if word.lower() in body:
                 self.trigger_build(pr, comment)
