@@ -60,6 +60,8 @@ def _handle_request(
             result.headers = r.headers
     except HTTPError as e:
         result.status_code = e.code
+        result.text = e.read().decode("utf-8")
+        result.headers = e.headers
 
     return result
 

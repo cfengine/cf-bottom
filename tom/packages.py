@@ -126,7 +126,7 @@ class PackageMapper:
                     "https://cfengine.com/release-data/%s/releases.json" % product
                 )
                 releases_request = network.get(releases_url)
-                if not releases_request.ok:
+                if releases_request.status_code != 200:
                     raise URLDownloadFailureException(
                         "failed to download %s, return code %d"
                         % (releases_url, releases_request.status_code)
@@ -234,7 +234,7 @@ class PackageMapper:
     def collect_packages(self, url):
         """Given a release URL, returns a dict where keys are platform names, and values are {'url': 'http...'}"""
         release_request = network.get(url)
-        if not release_request.ok:
+        if release_request.status_code != 200:
             raise URLDownloadFailureException(
                 "failed to download %s, return code %d"
                 % (url, release_request.status_code)
