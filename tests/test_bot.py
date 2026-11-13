@@ -247,6 +247,29 @@ def test_slow_docs_build():
     )
 
 
+def test_slow_docs_build_series_branch():
+    github_requests, jenkins_requests = _trigger_build(
+        repo="core",
+        prs={"documentation": 42, "core": 43},
+        comment="@cf-bottom build yeah?",
+        base_branch="3.27.x",
+    )
+    # Docs jobs drop the .x suffix, BASE_BRANCH keeps it
+    jenkins_requests.post.assert_called_once_with(
+        "https://ci.cfengine.com/job/build-and-deploy-docs-3.27/buildWithParameters/api/json",
+        data={
+            "CORE_REV": "43",
+            "DOCS_REV": "42",
+            "BASE_BRANCH": "3.27.x",
+            "BUILD_DESC": "Test PR Title @test-trusted-author (core#43 documentation#42 3.27.x)",
+            "DOCS_BRANCH": "pr",
+            "CONFIGURATIONS_FILTER": "",
+        },
+        headers={"Jenkins-Crumb": "test-jenkins-crumb"},
+        auth=ANY,
+    )
+
+
 from unittest.mock import MagicMock, patch, ANY
 from tom.bot import Bot
 from tom.jenkins import Jenkins
