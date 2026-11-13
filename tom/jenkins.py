@@ -64,15 +64,17 @@ class Jenkins:
             if repo in ["core", "enterprise", "nova", "masterfiles"]
         )
         job = "pr-pipeline"
+        # Docs jobs are named after docs branches, e.g. 3.27 (not 3.27.x)
+        docs_branch = branch[:-2] if branch.endswith(".x") else branch
         if docs:
             if need_slow_build:
-                job = "build-and-deploy-docs-{}".format(branch)
+                job = "build-and-deploy-docs-{}".format(docs_branch)
                 no_tests = True  # but allow for override if specified
             else:
-                job = "fast-build-and-deploy-docs-{}".format(branch)
+                job = "fast-build-and-deploy-docs-{}".format(docs_branch)
         else:
             if "documentation" in prs.keys():
-                job = "build-and-deploy-docs-{}".format(branch)
+                job = "build-and-deploy-docs-{}".format(docs_branch)
                 no_tests = False
                 # clear configurations filter out so all default packages are generated and tested
                 params["CONFIGURATIONS_FILTER"] = ""
